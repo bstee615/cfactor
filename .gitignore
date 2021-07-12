@@ -1,0 +1,11 @@
+.vscode
+.notebook
+.ipynb_checkpoints
+__pycache__
+joern-cli
+joern-util
+workspace
+llvm-project-11.1.0.src
+srcml
+tests
+output
