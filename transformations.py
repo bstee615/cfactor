@@ -255,15 +255,18 @@ if __name__ == '__main__':
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = permute_stmt(c_file, info={"project": 'tests/testbed'})
+    assert new_lines != None
     print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    
+    c_file = Path('tests/abm/594/nonul2.c')
+    # Should only be 1 independent pair
+    new_lines = permute_stmt(c_file, info={"project": 'tests/abm/594'})
 
 
 # In[88]:
 
 
 # Refactoring: rename variable 
-from random_word import RandomWords
-words = RandomWords()
 
 def rename_variable(c_file, picker=lambda i: i[0], info=None):
     root = get_xml_from_file(c_file)
@@ -277,7 +280,7 @@ def rename_variable(c_file, picker=lambda i: i[0], info=None):
 
     function_name = xp(target_name_node, './ancestor::src:function')[0].xpath('./src:name', namespaces=namespaces)[0].text
     targets = xp(root, f'//src:name[text() = "{old_target_name}"][ancestor::src:function[./src:name[text() = "{function_name}"]]]')
-    assert len(targets) > 0
+    assert len(targets) > 0, 'No variable reference queried'
     for target in targets:
         target.text = new_target_name
     
@@ -368,7 +371,7 @@ def get_stmts_by_case(switch):
         elif tag_name == 'return':
             pass
         else:
-            raise
+            raise Exception(f'Unknown statement tag ends a switch: {tag_name}')
 
     # Disallow all fallthrough blocks because they are not sound
     def get_case_text(cases):
@@ -483,7 +486,7 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
     if len(all_loops) == 0:
         return None
     loop = picker(all_loops)
-    
+
     succ = ast.successors(loop)
     init = next(n for n in succ if node_type[n] == 'ForInit')
     cond = next(n for n in succ if node_type[n] == 'Condition')
@@ -504,7 +507,7 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
         comp_last_stmt = list(n for n in g.successors(comp))[-1]
     else:
         comp_last_stmt = comp
-    
+        
     post_end_offset = int(node_loc[post].split(':')[3])
     for_parens_end_idx = text.find(')', post_end_offset)
 
