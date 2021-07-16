@@ -273,9 +273,7 @@ def rename_variable(c_file, picker=lambda i: i[0], info=None):
     target_name_node = picker(all_names)
     old_target_name = target_name_node.text
 
-    new_target_name = words.get_random_word()
-    while '-' in new_target_name:
-        new_target_name = words.get_random_word()
+    new_target_name = 'fungus'
 
     function_name = xp(target_name_node, './ancestor::src:function')[0].xpath('./src:name', namespaces=namespaces)[0].text
     targets = xp(root, f'//src:name[text() = "{old_target_name}"][ancestor::src:function[./src:name[text() = "{function_name}"]]]')
@@ -308,14 +306,12 @@ def insert_noop(c_file, picker=lambda i: i[0], info=None):
     target_line = int(location.split(':')[0])
     target_idx = target_line - 1
     
-    new_name = words.get_random_word()
-    while '-' in new_name:
-        new_name = words.get_random_word()
+    new_name = 'mungus'
 
     import random
     typename, value = random.choice([
         ('int', '123'),
-        ('char', 'a'),
+        ('char', '\'a\''),
         ('char *', '"hello"'),
     ])
 
