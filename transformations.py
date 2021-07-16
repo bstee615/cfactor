@@ -242,6 +242,8 @@ def permute_stmt(c_file, picker=lambda i: i[0], info=None):
     for block in candidate_blocks:
         independent_pairs += independent_stmts(block, g)
     # print('independent pairs:', independent_pairs)
+    if len(independent_pairs) == 0:
+        return None
     picked = picker(independent_pairs)
     a, b = picked
     new_lines = swap_lines(a, b, g, c_file)
@@ -266,6 +268,8 @@ words = RandomWords()
 def rename_variable(c_file, picker=lambda i: i[0], info=None):
     root = get_xml_from_file(c_file)
     all_names = xp(root, f'//src:function//src:decl_stmt/src:decl/src:name')
+    if len(all_names) == 0:
+        return None
     target_name_node = picker(all_names)
     old_target_name = target_name_node.text
 
@@ -297,7 +301,9 @@ if __name__ == '__main__':
 # Refactoring: insert noop
 def insert_noop(c_file, picker=lambda i: i[0], info=None):
     g = cpg.parse(Path(info["project"]), Path(c_file))
-    all_targets = [d["location"] for n, d in g.nodes.items() if d["isCFGNode"] == True]
+    all_targets = [d["location"] for n, d in g.nodes.items() if d["type"] == 'ExpressionStatement' and isinstance(d["location"], str)]
+    if len(all_targets) == 0:
+        return None
     location = picker(all_targets)
     target_line = int(location.split(':')[0])
     target_idx = target_line - 1
@@ -445,6 +451,8 @@ def gen_if_stmt(switch):
 def switch_exchange(c_file, picker=lambda i: i[0], info=None):
     root = get_xml_from_file(c_file)
     all_switches = xp(root, f'//src:switch')
+    if len(all_switches) == 0:
+        return None
     target = picker(all_switches)
     if_stmt = gen_if_stmt(target)
     target.getparent().replace(target, if_stmt)
@@ -464,13 +472,9 @@ if __name__ == '__main__':
 
 import re
 def loop_exchange(c_file, picker=lambda i: i[0], info=None):
-    root = get_xml_from_file(c_file)
-    all_loops = xp(root, f'//src:for')
+    if len(all_loops) == 0:
+        return None
     loop = picker(all_loops)
-    loop_parent = loop.getparent()
-    loop_idx = loop_parent.index(loop)
-    block = xp(loop, './src:block')[0]
-    block_content = xp(block, './src:block_content')[0]
     
     # Deconstruct loop control node
     loop_control = xp(loop, './src:control')[0]
