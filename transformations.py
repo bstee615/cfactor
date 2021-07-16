@@ -472,45 +472,90 @@ if __name__ == '__main__':
 
 import re
 def loop_exchange(c_file, picker=lambda i: i[0], info=None):
+    g = cpg.parse(Path(info["project"]), Path(c_file))
+    ast = g.edge_subgraph([e for e, d in g.edges.items() if d["type"] == 'IS_AST_PARENT']).copy()
+    with open(c_file) as f:
+        text = f.read()
+    lines = text.splitlines(keepends=True)
+
+    node_type = nx.get_node_attributes(ast, 'type')
+    node_code = nx.get_node_attributes(ast, 'code')
+    node_loc = nx.get_node_attributes(ast, 'location')
+
+    all_loops = [n for n, d in ast.nodes.items() if d["type"] == 'ForStatement']
     if len(all_loops) == 0:
         return None
     loop = picker(all_loops)
     
-    # Deconstruct loop control node
-    loop_control = xp(loop, './src:control')[0]
-    init, cond, incr = loop_control
-    init = init[0]  # "int i = 0"
-    cond = cond[0]  # "i < n"
-    incr = incr[0]  # "i ++"
-    init.tail = ';\n'
-    cond.tail = '\n'
-
-    # Insert loop initializer
-    loop_parent.insert(loop_idx, init)
+    succ = ast.successors(loop)
+    init = next(n for n in succ if node_type[n] == 'ForInit')
+    cond = next(n for n in succ if node_type[n] == 'Condition')
+    post = next(n for n in succ if node_type[n] == 'PostIncDecOperationExpression')
     
-    # Insert increment statement
-    incr_stmt = E.expr_stmt(incr)
-    # whitespace_before_content = get_space(block_content, 'front')
-    # Adjust whitespace of the increment statement and the last line in the block
-    # block_content[-1].tail, incr_stmt.tail = whitespace_before_content, ';' + block_content[-1].tail
-    incr_stmt.tail = ';\n'
-    block_content.insert(len(block_content)+1, incr_stmt)
+    init_line, init_column, init_offset, init_end = map(int, node_loc[init].split(':'))
+    init_line -= 1
+    for_idx = text[:init_offset].rfind('for')
+    
+    cond_code = node_code[cond]
+    init_code = node_code[init]
+    post_code = node_code[post]
+    init_indent = lines[init_line][:-len(lines[init_line].lstrip())]
 
-    # Need to add curly braces if the loop doesn't have them
-    if block.text is None or '{' in block.text:
-        block.text = '{'
-        block_content.tail = '}'
+    comp = next(n for n in succ if node_type[n].endswith('Statement'))
+    cls_compound = node_type[comp] == 'CompoundStatement'
+    if cls_compound:
+        comp_last_stmt = list(n for n in g.successors(comp))[-1]
+    else:
+        comp_last_stmt = comp
+    
+    post_end_offset = int(node_loc[post].split(':')[3])
+    for_parens_end_idx = text.find(')', post_end_offset)
+
+    # print(comp_last_stmt)
+    cls_line, cls_column, cls_offset, cls_end = map(int, node_loc[comp_last_stmt].split(':'))
+    cls_line -= 1
+    cls_indent = lines[cls_line][:-len(lines[cls_line].lstrip())]
+    cls_end_idx = text.find('\n', cls_end)
+    if cls_compound:
+        for_end_idx = text.find('}', cls_end)
+    else:
+        for_end_idx = text.find('\n', cls_end)+1
 
     # Replace for loop with while inplace (preserves most whitespace automatically)
-    loop.tag = f'{{{namespaces["src"]}}}while'
-    loop.text = 'while '
-    loop.replace(loop_control, E.condition('(', cond, ')'))
-    return root
+    new_text = text[:for_idx]
+    new_text += init_code
+    new_text += '\n'
+    new_text += init_indent + f'while ({cond_code})'
+    if not cls_compound:
+        new_text += f'\n{init_indent}{{'
+    new_text += text[for_parens_end_idx+1:cls_end_idx]
+    new_text += '\n'
+    new_text += cls_indent + post_code + ';\n'
+    if not cls_compound:
+        new_text += f'{init_indent}}}\n'
+    else:
+        new_text += init_indent
+    new_text += text[for_end_idx:]
+    lines = new_text.splitlines(keepends=True)
+    # lines.insert(init_line, init_indent + init_code + '\n')
+    return lines
 
 if __name__ == '__main__':
     c_file = Path('tests/testbed/testbed.c')
-    root = loop_exchange(c_file)
-    new_lines = get_code(root).splitlines(keepends=True)
+    print(c_file)
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    # print(''.join(new_lines))
+    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+
+    c_file = Path('tests/ctestsuite/069/into2.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    with open('into.c', 'w') as f:
+        f.writelines(new_lines)
+    print('heyo')
     print(''.join(difflib.unified_diff(old_lines, new_lines)))
 
 
