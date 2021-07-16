@@ -168,14 +168,23 @@ def independent_stmts(basic_block, g):
 
     # old-joern
     pdg = g.edge_subgraph([e for e, d in g.edges.items() if d["type"] in ('CONTROLS', 'REACHES')]).copy()
+    ast = g.edge_subgraph([e for e, d in g.edges.items() if d["type"] in ('IS_AST_PARENT')]).copy()
     path_lengths = dict(nx.all_pairs_shortest_path_length(pdg))
+    node_type = nx.get_node_attributes(g, 'type')
+    node_code = nx.get_node_attributes(g, 'code')
 
     def depends(u, v):
         """Return true iff u depends on v."""
+        data_dependency = False
         if v in path_lengths:
             if u in path_lengths[v]:
-                return path_lengths[v][u] > 0
-        return False
+                data_dependency = path_lengths[v][u] > 0
+        u_id = {node_code[n] for n in nx.descendants(ast, u) if node_type[n] == 'Identifier'}
+        v_id = {node_code[n] for n in nx.descendants(ast, v) if node_type[n] == 'Identifier'}
+        shared = u_id.intersection(v_id)
+        variable_decl = len(shared) > 0
+        # print(data_dependency, variable_decl, u, v, u_id, v_id, shared)
+        return data_dependency or variable_decl
 
     # a --> i, b --> j, c --> k
     for i in range(len(basic_block)):
@@ -193,7 +202,7 @@ def independent_stmts(basic_block, g):
 
             # check statements in between
             skip = False
-            for k in range(i, j):
+            for k in range(i+1, j):
                 c = basic_block[k]
                 # a is moving to the end but an in-between statement depends on it
                 if depends(c, a):
