@@ -456,12 +456,13 @@ def switch_exchange(c_file, picker=lambda i: i[0], info=None):
     target = picker(all_switches)
     if_stmt = gen_if_stmt(target)
     target.getparent().replace(target, if_stmt)
-    return root
+    return get_code(root).splitlines(keepends=True)
 
 if __name__ == '__main__':
     c_file = Path('tests/testbed/testbed.c')
-    root = switch_exchange(c_file)
-    new_lines = get_code(root).splitlines(keepends=True)
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = switch_exchange(c_file)
     print(''.join(difflib.unified_diff(old_lines, new_lines)))
 
 
