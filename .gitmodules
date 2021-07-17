@@ -1,0 +1,3 @@
+[submodule "old-joern"]
+	path = old-joern
+	url = git@github.com:bstee615/old-joern.git
