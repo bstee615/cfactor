@@ -23,11 +23,11 @@ def parse(project_dir, filepath):
     shutil.copytree(project_dir, dst_dir)
 
     # Invoke joern
-    joern_bin = Path('./code-slicer/joern/joern-parse')
+    joern_bin = Path('./old-joern/joern-parse')
     joern_parsed = Path('parsed')
     if joern_parsed.exists():
         shutil.rmtree(joern_parsed)
-    cmd = f'{joern_bin} -outformat csv {tmp_directory}'
+    cmd = f'{joern_bin} {tmp_directory}'
     proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if proc.returncode != 0:
         print(proc.stdout.decode())
