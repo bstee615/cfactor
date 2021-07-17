@@ -1,7 +1,6 @@
 
 # Refactoring: exchange switch with if/else
 from collections import OrderedDict
-from pathlib import Path
 import copy
 
 import srcml
