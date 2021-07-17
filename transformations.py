@@ -97,7 +97,7 @@ def get_code(xml_root):
         f.write(et.tostring(xml_root, encoding='unicode'))
     return srcml(tmp)
 
-if __name__ == '__main__':
+def test_srcml_coupler():
     fname = Path('tests/testbed/testbed.c')
     root = get_xml_from_file(fname)
     get_code(root)
@@ -257,7 +257,7 @@ def permute_stmt(c_file, picker=lambda i: i[0], info=None):
     
     return new_lines
 
-if __name__ == '__main__':
+def test_permute_stmt():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
@@ -293,7 +293,7 @@ def rename_variable(c_file, picker=lambda i: i[0], info=None):
     new_code = get_code(root)
     return new_code.splitlines(keepends=True)
 
-if __name__ == '__main__':
+def test_rename_variable():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
@@ -329,7 +329,7 @@ def insert_noop(c_file, picker=lambda i: i[0], info=None):
     lines.insert(target_idx, f'{indent}{typename} {new_name} = {value};\n')
     return lines
 
-if __name__ == '__main__':
+def test_insert_noop():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
@@ -462,7 +462,7 @@ def switch_exchange(c_file, picker=lambda i: i[0], info=None):
     target.getparent().replace(target, if_stmt)
     return get_code(root).splitlines(keepends=True)
 
-if __name__ == '__main__':
+def test_switch_exchange():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
@@ -548,7 +548,7 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
     lines = new_text.splitlines(keepends=True)
     return lines
 
-if __name__ == '__main__':
+def test_loop_exchange():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
