@@ -1,110 +1,15 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Modifying AST with `srcml`
-# Parses very OK! Can we modify??
-
-# In[77]:
-
-
-# Imports
 from lxml import etree as et
-from lxml.builder import ElementMaker
-import subprocess
 from pathlib import Path
 import copy
-import re
 import difflib
 import networkx as nx
 
-import cpg
 import importlib
+import cpg
 importlib.reload(cpg)
-
-srcml_exe = 'srcml/bin/srcml'
-namespaces={'src': 'http://www.srcML.org/srcML/src'}
-E = ElementMaker(namespace="http://www.srcML.org/srcML/src")
-
-
-# In[78]:
-
-
-# Print XML from root
-def prettyprint(node):
-    print(et.tostring(node, encoding="unicode", pretty_print=True))
-# prettyprint(xmldata)
-
-def xp(node, xpath):
-    return node.xpath(xpath, namespaces=namespaces)
-
-def start_pos(node):
-    # prettyprint(node)
-    return node.get('{http://www.srcML.org/srcML/position}start')
-
-def get_space(node, front_back):
-    if front_back == 'front':
-        regex = rf'^<{et.QName(node).localname}[^>]+>(\s+)'
-    elif front_back == 'back':
-        regex = r'(\s+)$'
-    else:
-        raise
-    m = re.search(regex, et.tostring(node, encoding='unicode'))
-    if m:
-        return m.group(1)
-    else:
-        return ''
-
-
-# In[83]:
-
-
-# Functions for running srcml command.
-def srcml(filepath):
-    """Run srcml.
-    If the filepath is a .c file, return xml tree as lxml ElementTree.
-    If the filepath is an .xml file, return source code as a string."""
-    assert filepath.exists()
-    args = [srcml_exe, filepath]
-    args = [str(a) for a in args]
-    if filepath.suffix == '.c':
-        args += ['--position']
-    # print('Running SrcML:', ' '.join(args))
-    proc = subprocess.run(args, capture_output=True)
-    if proc.returncode != 0:
-        print('Error', proc.returncode)
-        print(proc.stderr)
-        return None
-    if filepath.suffix == '.xml':
-        return proc.stdout.decode('utf-8')
-    elif filepath.suffix == '.c':
-        # with open(str(filepath) + '.xml', 'wb') as f:
-        #     f.write(proc.stdout)
-        xml = et.fromstring(proc.stdout)
-        return xml
-
-def get_xml(c_code):
-    tmp = Path('/tmp/code.c')
-    with open(tmp, 'w') as f:
-        f.write(c_code)
-    return xp(srcml(tmp), '//src:unit')[0]
-
-def get_xml_from_file(c_file):
-    return xp(srcml(c_file), '//src:unit')[0]
-
-def get_code(xml_root):
-    tmp = Path('/tmp/code.xml')
-    with open(tmp, 'w') as f:
-        f.write(et.tostring(xml_root, encoding='unicode'))
-    return srcml(tmp)
-
-def test_srcml_coupler():
-    fname = Path('tests/testbed/testbed.c')
-    root = get_xml_from_file(fname)
-    get_code(root)
-    with open(fname) as f:
-        root = get_xml(f.read())
-        get_code(root)
-
+import srcml
+from srcml import xp, E
+importlib.reload(srcml)
 
 # ## Refactorings
 # Semantics preserving transformations modeled after [tnpa-generalizability](https://github.com/mdrafiqulrabin/tnpa-generalizability).
@@ -275,7 +180,7 @@ def test_permute_stmt():
 # Refactoring: rename variable 
 
 def rename_variable(c_file, picker=lambda i: i[0], info=None):
-    root = get_xml_from_file(c_file)
+    root = srcml.get_xml_from_file(c_file)
     all_names = xp(root, f'//src:function//src:decl_stmt/src:decl/src:name')
     if len(all_names) == 0:
         return None
@@ -284,13 +189,13 @@ def rename_variable(c_file, picker=lambda i: i[0], info=None):
 
     new_target_name = 'fungus'
 
-    function_name = xp(target_name_node, './ancestor::src:function')[0].xpath('./src:name', namespaces=namespaces)[0].text
+    function_name = xp(xp(target_name_node, './ancestor::src:function')[0], './src:name')[0].text
     targets = xp(root, f'//src:name[text() = "{old_target_name}"][ancestor::src:function[./src:name[text() = "{function_name}"]]]')
     assert len(targets) > 0, 'No variable reference queried'
     for target in targets:
         target.text = new_target_name
     
-    new_code = get_code(root)
+    new_code = srcml.get_code(root)
     return new_code.splitlines(keepends=True)
 
 def test_rename_variable():
@@ -358,19 +263,19 @@ def get_stmts_by_case(switch):
 
     # Parse all executable statements (stmt) from the switch.
     for node in block_content:
-        if et.QName(node).localname == 'case' or et.QName(node).localname == 'default':
+        if srcml.tagname(node) == 'case' or srcml.tagname(node) == 'default':
             cases.append(node)
             cases_key = tuple(copy.deepcopy(cases))
         else:
             if cases_key not in stmts_by_case:
                 stmts_by_case[cases_key] = []
             stmts_by_case[cases_key].append(node)
-            if et.QName(node).localname in ['break', 'return']:
+            if srcml.tagname(node) in ['break', 'return']:
                 cases = []
 
     # All blocks of executable statements must end with a "break;"
     for cases, stmts in stmts_by_case.items():
-        tag_name = et.QName(stmts[-1]).localname
+        tag_name = srcml.tagname(stmts[-1])
         if tag_name == 'break':
             stmts.pop()
         elif tag_name == 'return':
@@ -400,8 +305,8 @@ def gen_if_stmt(switch):
     """Generate a big if_stmt (if/elif/else) from a switch statement"""
 
     stmts_by_case = get_stmts_by_case(switch)
-    narrow_ws = get_space(xp(switch, './src:condition')[0], 'back')
-    wide_ws = get_space(xp(switch, './src:block/src:block_content')[0], 'front')
+    narrow_ws = srcml.get_space(xp(switch, './src:condition')[0], 'back')
+    wide_ws = srcml.get_space(xp(switch, './src:block/src:block_content')[0], 'front')
     condition_variable = copy.deepcopy(xp(switch, './src:condition/src:expr')[0])
     condition_variable.tail = '\n'
     IF, ELIF, ELSE = range(3)  # Type of conditional to generate
@@ -413,7 +318,7 @@ def gen_if_stmt(switch):
             # Generate a boolean condition expression or'ing together all cases
             sub_exprs = []
             for i, case in enumerate(cases):
-                if et.QName(case).localname == 'case':
+                if srcml.tagname(case) == 'case':
                     case_value = xp(case, './src:expr')[0]
                     case_value.tail = '\n'
                     sub_expr = E.expr(copy.deepcopy(condition_variable), ' ', E.operator('=='), case_value)
@@ -437,13 +342,13 @@ def gen_if_stmt(switch):
     ifs = []
     # Move default to last if it is alone
     for i, (cases, stmts) in enumerate(items):
-        if any(et.QName(c).localname == 'default' for c in cases):
+        if any(srcml.tagname(c) == 'default' for c in cases):
             default = items.pop(i)
             items.append(default)
             break
     for i, (cases, stmts) in enumerate(items):
         ifs.append(narrow_ws)
-        if any(et.QName(c).localname == 'default' for c in cases):
+        if any(srcml.tagname(c) == 'default' for c in cases):
             ifs.append(gen_conditional(cases, stmts, ELSE))
         elif i == 0:
             ifs.append(gen_conditional(cases, stmts, IF))
@@ -453,14 +358,14 @@ def gen_if_stmt(switch):
     return if_stmt
 
 def switch_exchange(c_file, picker=lambda i: i[0], info=None):
-    root = get_xml_from_file(c_file)
+    root = srcml.get_xml_from_file(c_file)
     all_switches = xp(root, f'//src:switch')
     if len(all_switches) == 0:
         return None
     target = picker(all_switches)
     if_stmt = gen_if_stmt(target)
     target.getparent().replace(target, if_stmt)
-    return get_code(root).splitlines(keepends=True)
+    return srcml.get_code(root).splitlines(keepends=True)
 
 def test_switch_exchange():
     c_file = Path('tests/testbed/testbed.c')
@@ -563,16 +468,12 @@ def test_loop_exchange():
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = loop_exchange(c_file, info={"project": c_file.parent})
-    with open('into.c', 'w') as f:
-        f.writelines(new_lines)
     assert count_diff(old_lines, new_lines) == (5, 2)
 
     c_file = Path('tests/abm/575/into3.c')
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = loop_exchange(c_file, info={"project": c_file.parent})
-    with open('into.c', 'w') as f:
-        f.writelines(new_lines)
     assert count_diff(old_lines, new_lines) == (5, 2)
 
 
