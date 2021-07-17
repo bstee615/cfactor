@@ -119,9 +119,16 @@ if __name__ == '__main__':
 
 # ### Permute Statement
 
-# #### srcML
-
-
+def count_diff(old_lines, new_lines):
+    plus = 0
+    minus = 0
+    diff_lines = difflib.ndiff(old_lines, new_lines)
+    for l in diff_lines:
+        if l.startswith('+'):
+            plus += 1
+        if l.startswith('-'):
+            minus += 1
+    return plus, minus
 
 # refactoring: Permute Statement
 
@@ -255,8 +262,7 @@ if __name__ == '__main__':
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = permute_stmt(c_file, info={"project": 'tests/testbed'})
-    assert new_lines != None
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    assert count_diff(old_lines, new_lines) == (1, 1)
     
     c_file = Path('tests/abm/594/nonul2.c')
     # Should only be 1 independent pair
@@ -292,8 +298,7 @@ if __name__ == '__main__':
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = rename_variable(c_file, info={"project": 'tests/testbed'})
-    import difflib
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    assert count_diff(old_lines, new_lines) == (5, 5)
 
 
 # In[101]:
@@ -329,7 +334,7 @@ if __name__ == '__main__':
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = insert_noop(c_file, info={"project": c_file.parent})
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    assert count_diff(old_lines, new_lines) == (1, 0)
 
 
 # In[108]:
@@ -462,7 +467,7 @@ if __name__ == '__main__':
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = switch_exchange(c_file)
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    assert count_diff(old_lines, new_lines) == (17, 9)
 
 
 # In[111]:
