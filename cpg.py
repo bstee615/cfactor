@@ -28,7 +28,6 @@ def parse(project_dir, filepath):
     if joern_parsed.exists():
         shutil.rmtree(joern_parsed)
     cmd = f'{joern_bin} -outformat csv {tmp_directory}'
-    print(cmd)
     proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if proc.returncode != 0:
         print(proc.stdout.decode())

@@ -9,3 +9,11 @@ llvm-project-11.1.0.src
 srcml
 tests
 output
+logs
+code-slicer
+parsed
+pdg
+tmp
+out
+log*
+c2c

@@ -558,6 +558,15 @@ if __name__ == '__main__':
     print('heyo')
     print(''.join(difflib.unified_diff(old_lines, new_lines)))
 
+    c_file = Path('tests/abm/575/into3.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    with open('into.c', 'w') as f:
+        f.writelines(new_lines)
+    print('heyo')
+    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+
 
 # In[ ]:
 
