@@ -472,6 +472,19 @@ if __name__ == '__main__':
 
 # In[111]:
 
+import dataclasses
+
+@dataclasses.dataclass
+class JoernLocation:
+    line: int  # 1-indexed
+    column_idx: int  # All others 0-indexed
+    offset: int
+    end_offset: int
+
+    @staticmethod
+    def fromstring(location):
+        return JoernLocation(*map(int, location.split(':')))
+
 
 # Refactoring: exchange for loop with while
 
@@ -486,73 +499,65 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
     node_type = nx.get_node_attributes(ast, 'type')
     node_code = nx.get_node_attributes(ast, 'code')
     node_loc = nx.get_node_attributes(ast, 'location')
+    node_childNum = nx.get_node_attributes(ast, 'childNum')
 
+    # Pick a loop
     all_loops = [n for n, d in ast.nodes.items() if d["type"] == 'ForStatement']
     if len(all_loops) == 0:
         return None
     loop = picker(all_loops)
 
+    # Get child nodes
     succ = ast.successors(loop)
-    init = next(n for n in succ if node_type[n] == 'ForInit')
-    cond = next(n for n in succ if node_type[n] == 'Condition')
-    post = next(n for n in succ if node_type[n] == 'PostIncDecOperationExpression')
+    init, cond, post, stmt = succ
+
+    # CompoundStatements don't have reliable code locations,
+    # so get the last statement of the loop body
+    stmt_is_compound = node_type[stmt] == 'CompoundStatement'
+    if stmt_is_compound:
+        stmt = max(g.successors(stmt), key=lambda n: node_childNum[n])
     
-    init_line, init_column, init_offset, init_end = map(int, node_loc[init].split(':'))
-    init_line -= 1
-    for_idx = text[:init_offset].rfind('for')
-    
+    # Get code and location for the interesting nodes
     cond_code = node_code[cond]
     init_code = node_code[init]
     post_code = node_code[post]
-    init_indent = lines[init_line][:-len(lines[init_line].lstrip())]
+    loop_loc = JoernLocation.fromstring(node_loc[loop])
+    stmt_loc = JoernLocation.fromstring(node_loc[stmt])
+    
+    # Get the correct whitespace to indent the loop and the body
+    loop_indent = lines[loop_loc.line-1][:-len(lines[loop_loc.line-1].lstrip())]
+    body_indent = lines[stmt_loc.line-1][:-len(lines[stmt_loc.line-1].lstrip())]
 
-    comp = next(n for n in succ if node_type[n].endswith('Statement'))
-    cls_compound = node_type[comp] == 'CompoundStatement'
-    if cls_compound:
-        comp_last_stmt = list(n for n in g.successors(comp))[-1]
+    # Get the last character of the for loop's body
+    if stmt_is_compound:
+        seek = '}\n'
     else:
-        comp_last_stmt = comp
-        
-    post_end_offset = int(node_loc[post].split(':')[3])
-    for_parens_end_idx = text.find(')', post_end_offset)
-
-    # print(comp_last_stmt)
-    cls_line, cls_column, cls_offset, cls_end = map(int, node_loc[comp_last_stmt].split(':'))
-    cls_line -= 1
-    cls_indent = lines[cls_line][:-len(lines[cls_line].lstrip())]
-    cls_end_idx = text.find('\n', cls_end)
-    if cls_compound:
-        for_end_idx = text.find('}', cls_end)
-    else:
-        for_end_idx = text.find('\n', cls_end)+1
+        seek = '\n'
+    proceed_from = text.find(seek, stmt_loc.end_offset + 1) + len(seek)
 
     # Replace for loop with while inplace (preserves most whitespace automatically)
-    new_text = text[:for_idx]
-    new_text += init_code
-    new_text += '\n'
-    new_text += init_indent + f'while ({cond_code})'
-    if not cls_compound:
-        new_text += f'\n{init_indent}{{'
-    new_text += text[for_parens_end_idx+1:cls_end_idx]
-    new_text += '\n'
-    new_text += cls_indent + post_code + ';\n'
-    if not cls_compound:
-        new_text += f'{init_indent}}}\n'
-    else:
-        new_text += init_indent
-    new_text += text[for_end_idx:]
+    new_text = text[:loop_loc.offset]
+    new_text += init_code + '\n'
+    new_text += loop_indent + f'while ({cond_code})'
+    if not stmt_is_compound:
+        new_text += ' {'
+    new_text += text[loop_loc.end_offset+1:stmt_loc.end_offset+1] + '\n'
+    new_text += body_indent + post_code + ';\n'
+    new_text += loop_indent + '}\n'
+    new_text += text[proceed_from:]
     lines = new_text.splitlines(keepends=True)
-    # lines.insert(init_line, init_indent + init_code + '\n')
     return lines
 
 if __name__ == '__main__':
     c_file = Path('tests/testbed/testbed.c')
-    print(c_file)
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
-    # print(''.join(new_lines))
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    new_lines = loop_exchange(c_file, picker=lambda x: x[0], info={"project": c_file.parent})
+    assert count_diff(old_lines, new_lines) == (3, 1)
+    new_lines = loop_exchange(c_file, picker=lambda x: x[1], info={"project": c_file.parent})
+    assert count_diff(old_lines, new_lines) == (3, 1)
+    new_lines = loop_exchange(c_file, picker=lambda x: x[2], info={"project": c_file.parent})
+    assert count_diff(old_lines, new_lines) == (4, 1)
 
     c_file = Path('tests/ctestsuite/069/into2.c')
     with open(c_file) as f:
@@ -560,8 +565,7 @@ if __name__ == '__main__':
     new_lines = loop_exchange(c_file, info={"project": c_file.parent})
     with open('into.c', 'w') as f:
         f.writelines(new_lines)
-    print('heyo')
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    assert count_diff(old_lines, new_lines) == (5, 2)
 
     c_file = Path('tests/abm/575/into3.c')
     with open(c_file) as f:
@@ -569,8 +573,7 @@ if __name__ == '__main__':
     new_lines = loop_exchange(c_file, info={"project": c_file.parent})
     with open('into.c', 'w') as f:
         f.writelines(new_lines)
-    print('heyo')
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    assert count_diff(old_lines, new_lines) == (5, 2)
 
 
 # In[ ]:
