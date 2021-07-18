@@ -21,6 +21,11 @@ def count_diff(old_lines, new_lines):
     return plus, minus
 
 
+def print_diff(old_lines, new_lines):
+    """Print the diff between two sets of lines"""
+    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+
+
 def test_permute_stmt():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
@@ -31,6 +36,12 @@ def test_permute_stmt():
     c_file = Path('tests/abm/594/nonul2.c')
     # Should only be 1 independent pair
     new_lines = permute_stmt(c_file, info={"project": 'tests/abm/594'})
+
+    c_file = Path('tests/ctestsuite/111/fmt_string_local_container.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/111'})
+    assert new_lines is None, print_diff(old_lines, new_lines)
 
 
 def test_rename_variable():
