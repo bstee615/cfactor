@@ -49,7 +49,7 @@ def parse(project_dir, filepath):
     # ]
     # graphs = {}
     cpg = nx.MultiDiGraph()
-    nodes_attributes = [dict(row) for i, row in nodes_df.iterrows()]
+    nodes_attributes = [{k:v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in nodes_df.iterrows()]
     for na in nodes_attributes:
         na.update({"label": na["code"]})
     nodes = list(zip(nodes_df["key"].values.tolist(), nodes_attributes))
