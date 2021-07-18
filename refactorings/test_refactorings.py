@@ -6,6 +6,7 @@ from refactorings.loop_exchange import loop_exchange
 
 from pathlib import Path
 import difflib
+import pytest
 
 
 def count_diff(old_lines, new_lines):
@@ -82,16 +83,17 @@ def test_loop_exchange():
                               "project": c_file.parent})
     assert count_diff(old_lines, new_lines) == (4, 1)
 
-    c_file = Path('tests/ctestsuite/069/into2.c')
+    c_file = Path('tests/abm/575/into3.c')
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = loop_exchange(c_file, info={"project": c_file.parent})
     assert count_diff(old_lines, new_lines) == (5, 2)
 
-    c_file = Path('tests/abm/575/into3.c')
+    c_file = Path('tests/ctestsuite/153/os_cmd_loop.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    with pytest.raises(Exception, match='insufficient location info'):
+        new_lines = loop_exchange(c_file, info={"project": c_file.parent})
 
     c_file = Path('tests/crlf/crlf.c')
     with open(c_file) as f:

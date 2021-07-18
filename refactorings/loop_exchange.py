@@ -42,11 +42,20 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
     succ = ast.successors(loop)
     init, cond, post, stmt = succ
 
+    # Some statements are disqualified
+    janky_location_stmts = (
+        'CompoundStatement',
+        'IfStatement', 'ElseStatement',
+        'ForStatement', 'WhileStatement',
+        'SwitchStatement',
+    )
     # CompoundStatements don't have reliable code locations,
     # so get the last statement of the loop body
     stmt_is_compound = node_type[stmt] == 'CompoundStatement'
     if stmt_is_compound:
         stmt = max(g.successors(stmt), key=lambda n: node_childNum[n])
+        if node_type[stmt] in janky_location_stmts:
+            raise Exception('Loop does not qualify because its last statement has insufficient location info')
     
     # Get code and location for the interesting nodes
     cond_code = node_code[cond]
