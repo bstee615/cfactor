@@ -44,6 +44,12 @@ def test_permute_stmt():
     new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/111'})
     assert new_lines is None, print_diff(old_lines, new_lines)
 
+    c_file = Path('tests/ctestsuite/199/lock_resource.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/199'})
+    assert count_diff(old_lines, new_lines) == (2, 2), print_diff(old_lines, new_lines)
+
 
 def test_rename_variable():
     c_file = Path('tests/testbed/testbed.c')

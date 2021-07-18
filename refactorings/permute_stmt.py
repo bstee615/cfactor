@@ -16,6 +16,14 @@ def get_basic_blocks(g):
     is_cfg_node = nx.get_node_attributes(ast, 'isCFGNode')
     node_type = nx.get_node_attributes(ast, 'type')
     node_code = nx.get_node_attributes(ast, 'code')
+    node_order = nx.get_node_attributes(ast, 'childNum')
+
+    # Some nodes need to be handled specially because their children are CFG nodes
+    control_node_types = (
+        'IfStatement', 'ElseStatement',
+        'ForStatement', 'WhileStatement',
+        'SwitchStatement',
+    )
 
     roots = list(i for i, d in ast.nodes().items()
                  if d["type"] == 'FunctionDef')
@@ -26,7 +34,9 @@ def get_basic_blocks(g):
         q = [r]
         visited = {r}
         while len(q) > 0:
-            u = q.pop(0)
+            u = q.pop(0)  # BFS
+            # u = q.pop()  # DFS
+            # print(u, node_type[u])
             if is_cfg_node[u]:
                 if node_type[u] in ('IdentifierDeclStatement', 'ExpressionStatement') and len(node_code[u]) > 0:
                     b.append(u)
@@ -34,7 +44,11 @@ def get_basic_blocks(g):
                     if len(b) > 0:
                         blocks.append(b)
                         b = []
-            for v in ast.successors(u):
+            elif node_type[u] in control_node_types:
+                if len(b) > 0:
+                    blocks.append(b)
+                    b = []
+            for v in sorted(ast.successors(u), key=lambda v: node_order[v]):
                 if v not in visited:
                     visited.add(v)
                     q.append(v)
@@ -116,11 +130,14 @@ def permute_stmt(c_file, picker=lambda i: i[0], info=None):
     assert info is not None
     g = cpg.parse(Path(info["project"]), Path(c_file))
     basic_blocks = get_basic_blocks(g)
+    # print('blocks:', basic_blocks)
     candidate_blocks = [b for b in basic_blocks if len(b) > 1]
+    # print('candidates:', candidate_blocks)
 
     independent_pairs = []
     for block in candidate_blocks:
         independent_pairs += independent_stmts(block, g)
+    # print('independent pairs:', independent_pairs)
     if len(independent_pairs) == 0:
         return None
     picked = picker(independent_pairs)
