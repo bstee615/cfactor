@@ -81,4 +81,9 @@ def test_loop_exchange():
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = loop_exchange(c_file, info={"project": c_file.parent})
-    assert count_diff(old_lines, new_lines) == (5, 2)
+
+    c_file = Path('tests/crlf/crlf.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    with pytest.raises(Exception, match='CRLF'):
+        new_lines = loop_exchange(c_file, info={"project": c_file.parent})

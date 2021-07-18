@@ -20,8 +20,11 @@ class JoernLocation:
 def loop_exchange(c_file, picker=lambda i: i[0], info=None):
     g = cpg.parse(Path(info["project"]), Path(c_file))
     ast = g.edge_subgraph([e for e, d in g.edges.items() if d["type"] == 'IS_AST_PARENT']).copy()
-    with open(c_file) as f:
+    # If file has CRLF line endings, then it will screw with Python's counting the file offsets.
+    with open(c_file, newline='\r\n') as f:
         text = f.read()
+    if '\r' in text:
+        raise Exception(f'{c_file} is CRLF')
     lines = text.splitlines(keepends=True)
 
     node_type = nx.get_node_attributes(ast, 'type')
