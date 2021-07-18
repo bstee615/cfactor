@@ -15,6 +15,7 @@ def get_basic_blocks(g):
                           if d["type"] == 'IS_AST_PARENT']).copy()
     is_cfg_node = nx.get_node_attributes(ast, 'isCFGNode')
     node_type = nx.get_node_attributes(ast, 'type')
+    node_code = nx.get_node_attributes(ast, 'code')
 
     roots = list(i for i, d in ast.nodes().items()
                  if d["type"] == 'FunctionDef')
@@ -27,7 +28,7 @@ def get_basic_blocks(g):
         while len(q) > 0:
             u = q.pop(0)
             if is_cfg_node[u]:
-                if node_type[u] in ('IdentifierDeclStatement', 'ExpressionStatement'):
+                if node_type[u] in ('IdentifierDeclStatement', 'ExpressionStatement') and len(node_code[u]) > 0:
                     b.append(u)
                 else:
                     if len(b) > 0:
