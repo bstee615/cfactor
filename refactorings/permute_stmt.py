@@ -44,11 +44,9 @@ def get_basic_blocks(g):
                     if len(b) > 0:
                         blocks.append(b)
                         b = []
-            elif node_type[u] in control_node_types:
-                if len(b) > 0:
-                    blocks.append(b)
-                    b = []
             for v in sorted(ast.successors(u), key=lambda v: node_order[v]):
+                if node_type[v] in control_node_types:
+                    v = next(w for w in ast.successors(v) if is_cfg_node[w])
                 if v not in visited:
                     visited.add(v)
                     q.append(v)
