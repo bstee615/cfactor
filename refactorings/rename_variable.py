@@ -18,7 +18,8 @@ def rename_variable(c_file, picker=lambda i: i[0], info=None):
         xp(target_name_node, './ancestor::src:function')[0], './src:name')[0].text
     targets = xp(
         root, f'//src:name[text() = "{old_target_name}"][ancestor::src:function[./src:name[text() = "{function_name}"]]]')
-    assert len(targets) > 0, 'No variable reference queried'
+    if len(targets) == 0:
+        return None
     for target in targets:
         target.text = new_target_name
 
