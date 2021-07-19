@@ -11,48 +11,43 @@ def get_basic_blocks(g):
     """Return a list of all basic blocks, where a block is a list of statements"""
     blocks = []
 
-    ast = g.edge_subgraph([e for e, d in g.edges.items()
-                          if d["type"] == 'IS_AST_PARENT']).copy()
-    is_cfg_node = nx.get_node_attributes(ast, 'isCFGNode')
-    node_type = nx.get_node_attributes(ast, 'type')
-    node_code = nx.get_node_attributes(ast, 'code')
-    node_order = nx.get_node_attributes(ast, 'childNum')
+    cfg = g.edge_subgraph([e for e, d in g.edges.items()
+                          if d["type"] == 'FLOWS_TO']).copy()
+    node_type = nx.get_node_attributes(g, 'type')
+    node_code = nx.get_node_attributes(g, 'code')
 
-    # Some nodes need to be handled specially because their children are CFG nodes
-    control_node_types = (
-        'IfStatement', 'ElseStatement',
-        'ForStatement', 'WhileStatement',
-        'SwitchStatement',
-    )
+    leaders = set()
+    for u in cfg.nodes:
+        pred = list(cfg.predecessors(u))
+        succ = list(cfg.successors(u))
+        if len(pred) == 0 or len(pred) > 1:
+            leaders.add(u)
+        if len(succ) > 1:
+            for v in succ:
+                leaders.add(v)
+        # If none are true, len(pred) == 1 and len(succ) == 1 or 0
+    # print('leaders:', leaders)
 
-    roots = list(i for i, d in ast.nodes().items()
-                 if d["type"] == 'FunctionDef')
-
+    def append_if_valid(b, n):
+        if node_type[n] in ('ExpressionStatement', 'IdentifierDeclStatement') and len(node_code[n]) > 0:
+            b.append(n)
+    
     blocks = []
-    for r in roots:
+    for l in leaders:
         b = []
-        q = [r]
-        visited = {r}
-        while len(q) > 0:
-            u = q.pop(0)  # BFS
-            # u = q.pop()  # DFS
-            # print(u, node_type[u])
-            if is_cfg_node[u]:
-                if node_type[u] in ('IdentifierDeclStatement', 'ExpressionStatement') and len(node_code[u]) > 0:
-                    b.append(u)
-                else:
-                    if len(b) > 0:
-                        blocks.append(b)
-                        b = []
-            for v in sorted(ast.successors(u), key=lambda v: node_order[v]):
-                if node_type[v] in control_node_types:
-                    v = next(w for w in ast.successors(v) if is_cfg_node[w])
-                if v not in visited:
-                    visited.add(v)
-                    q.append(v)
+        append_if_valid(b, l)
+        u = l
+        # Add any nodes dominated by l to this basic block
+        succ = list(cfg.successors(u))
+        while len(succ) == 1:
+            u = succ[0]
+            succ = list(cfg.successors(u))
+            pred = list(cfg.predecessors(u))
+            if len(pred) > 1:
+                break
+            append_if_valid(b, u)
         if len(b) > 0:
             blocks.append(b)
-            b = []
 
     return blocks
 
@@ -61,11 +56,11 @@ def independent_stmts(basic_block, g):
     """Return a list of pairs of independent statements in a given basic block"""
     independent = []
 
-    pdg = g.edge_subgraph([e for e, d in g.edges.items()
-                          if d["type"] in ('CONTROLS', 'REACHES')]).copy()
+    ddg = g.edge_subgraph([e for e, d in g.edges.items()
+                          if d["type"] in ('REACHES')]).copy()
     ast = g.edge_subgraph([e for e, d in g.edges.items()
                           if d["type"] in ('IS_AST_PARENT')]).copy()
-    path_lengths = dict(nx.all_pairs_shortest_path_length(pdg))
+    path_lengths = dict(nx.all_pairs_shortest_path_length(ddg))
     node_type = nx.get_node_attributes(g, 'type')
     node_code = nx.get_node_attributes(g, 'code')
 
