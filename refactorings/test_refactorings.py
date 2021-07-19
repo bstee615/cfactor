@@ -106,3 +106,9 @@ def test_loop_exchange():
         old_lines = f.readlines()
     with pytest.raises(Exception, match='CRLF'):
         new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+
+    c_file = Path('tests/ctestsuite/125/heap_overflow_cplx.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    assert count_diff(old_lines, new_lines) == (2, 1)

@@ -39,8 +39,17 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
     loop = picker(all_loops)
 
     # Get child nodes
-    succ = ast.successors(loop)
-    init, cond, post, stmt = succ
+    succ = list(ast.successors(loop))
+    if len(succ) == 4:
+        init, cond, post, stmt = succ
+        assert node_type[init] == 'ForInit', f'expected \'ForInit\' got {node_type[init]}'
+    elif len(succ) == 3:
+        init = None
+        cond, post, stmt = succ
+    else:
+        raise Exception('Unexpected loop subtree structure')
+    assert node_type[cond] == 'Condition'
+    assert node_type[stmt].endswith('Statement')
 
     # Some statements are disqualified
     janky_location_stmts = (
@@ -56,10 +65,12 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
         stmt = max(g.successors(stmt), key=lambda n: node_childNum[n])
         if node_type[stmt] in janky_location_stmts:
             raise Exception('Loop does not qualify because its last statement has insufficient location info')
+    assert node_type[stmt].endswith('Statement')
     
     # Get code and location for the interesting nodes
     cond_code = node_code[cond]
-    init_code = node_code[init]
+    if init is not None:
+        init_code = node_code[init]
     post_code = node_code[post]
     loop_loc = JoernLocation.fromstring(node_loc[loop])
     stmt_loc = JoernLocation.fromstring(node_loc[stmt])
@@ -77,8 +88,9 @@ def loop_exchange(c_file, picker=lambda i: i[0], info=None):
 
     # Replace for loop with while inplace (preserves most whitespace automatically)
     new_text = text[:loop_loc.offset]
-    new_text += init_code + '\n'
-    new_text += loop_indent + f'while ({cond_code})'
+    if init is not None:
+        new_text += init_code + '\n' + loop_indent
+    new_text += f'while ({cond_code})'
     if not stmt_is_compound:
         new_text += ' {'
     new_text += text[loop_loc.end_offset+1:stmt_loc.end_offset+1] + '\n'
