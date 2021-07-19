@@ -17,3 +17,5 @@ tmp
 out
 log*
 c2c
+.pytest_cache
+*.zip

@@ -51,7 +51,7 @@ def parse(project_dir, filepath):
     cpg = nx.MultiDiGraph()
     nodes_attributes = [{k:v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in nodes_df.iterrows()]
     for na in nodes_attributes:
-        na.update({"label": na["code"]})
+        na.update({"label": f'{na["key"]}: {na["code"]}'})
     nodes = list(zip(nodes_df["key"].values.tolist(), nodes_attributes))
     cpg.add_nodes_from(nodes)
 
@@ -82,7 +82,9 @@ def parse(project_dir, filepath):
     # for d in stmts:
     #     print(d["key"], d["code"])
     # from networkx.drawing.nx_agraph import write_dot
-    # write_dot(cpg, 'cpg.dot')
+    # cfg = cpg.edge_subgraph([e for e, d in cpg.edges.items()
+    #                       if d["type"] == 'FLOWS_TO']).copy()
+    # write_dot(cfg, 'cfg.dot')
     # write_dot(graphs["AST"], 'ast.dot')
     # write_dot(graphs["CDG"], 'cdg.dot')
     # write_dot(graphs["DDG"], 'ddg.dot')
