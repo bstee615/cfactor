@@ -7,10 +7,9 @@ import tempfile
 
 
 class TransformationProject:
-    def __init__(self, transforms, picker, num_iterations, project, c_filename, exclude, keep_tmp):
+    def __init__(self, transforms, picker, project, c_filename, exclude, keep_tmp):
         self.transforms = copy.deepcopy(transforms)
         self.picker = picker
-        self.num_iterations = num_iterations
         self.info = {"exclude": exclude}
 
         self.project, self.c_filename = project, c_filename
@@ -84,7 +83,7 @@ class TransformationProject:
 
         self.transforms_applied = []
 
-        # Apply num_iterations transforms, chosen randomly
+        # Apply all transforms one at a time
         shutil.copy2(self.c_filename, self.tmp_dir / (self.c_filename.name + '.back'))
         while len(self.transforms) > 0:
             if len(self.transforms) == 0:
@@ -96,12 +95,11 @@ class TransformationProject:
 
 
 class TransformationsFactory:
-    def __init__(self, transforms, picker, num_iterations):
+    def __init__(self, transforms, picker):
         self.transforms = copy.deepcopy(list(transforms))
         self.picker = picker
-        self.num_iterations = num_iterations
 
     def make_project(self, c_filename, project=None, exclude=None, keep_tmp=False):
         if project is None:
             project = c_filename.parent
-        return TransformationProject(self.transforms, self.picker, self.num_iterations, project, c_filename, exclude, keep_tmp=keep_tmp)
+        return TransformationProject(self.transforms, self.picker, project, c_filename, exclude, keep_tmp=keep_tmp)

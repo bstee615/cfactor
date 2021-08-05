@@ -1,8 +1,4 @@
-from refactorings.insert_noop import insert_noop
-from refactorings.rename_variable import rename_variable
-from refactorings.permute_stmt import permute_stmt
-from refactorings.switch_exchange import switch_exchange
-from refactorings.loop_exchange import loop_exchange
+from refactorings import *
 
 from pathlib import Path
 import difflib
@@ -114,16 +110,8 @@ def test_loop_exchange():
     assert count_diff(old_lines, new_lines) == (2, 1)
 
 def test_project():
-    import refactorings
     c_file = Path('tests/testbed/testbed.c')
-    default_transforms = (
-        refactorings.insert_noop,
-        refactorings.switch_exchange,
-        refactorings.loop_exchange,
-        refactorings.rename_variable,
-        refactorings.permute_stmt,
-    )
-    factory = refactorings.TransformationsFactory(transforms=default_transforms, picker=lambda a: a[0], num_iterations=5)
+    factory = TransformationsFactory(transforms=all_refactorings, picker=first_picker)
     with factory.make_project(c_file) as project:
         new_filename = project.apply_all()
         with open(c_file) as f:

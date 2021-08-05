@@ -16,6 +16,8 @@ from refactorings.permute_stmt import permute_stmt
 from refactorings.switch_exchange import switch_exchange
 from refactorings.loop_exchange import loop_exchange
 from refactorings.project import TransformationsFactory
+import random
+import sys
 
 all_refactorings = [
     insert_noop,
@@ -25,7 +27,15 @@ all_refactorings = [
     switch_exchange,
 ]
 
-import sys
-debug = True
+def random_picker(targets):
+    assert len(targets) > 0, 'Collection is empty'
+    return random.choice(targets)
+
+def first_picker(targets):
+    assert len(targets) > 0, 'Collection is empty'
+    return targets[0]
+
+debug = False
 if debug:
     print(f'Loaded ({[r.__name__ for r in all_refactorings]})', file=sys.stderr)
+    print(f'Loaded {TransformationsFactory.__name__}', file=sys.stderr)
