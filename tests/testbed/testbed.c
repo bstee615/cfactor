@@ -43,9 +43,10 @@ int switchtest(char a)
         y = 10;
         if (y == 10 && y > 4 && x == 5) {
             x = "5";
-            break;
         }
-        y = 3;
+        else{
+            y = 3;
+        }
         break;
         case 'c':
         y --;
