@@ -13,9 +13,9 @@ def gather_stmts(nodes):
             statements.append(node)
     return statements
 
-def parse(project_dir, filepath, exclude):
+def parse(root, project_dir, filepath, exclude):
     # Copy file to tmp directory
-    tmp_directory = Path('tmp')
+    tmp_directory = root / 'tmp'
     if tmp_directory.exists():
         shutil.rmtree(tmp_directory)
     os.makedirs(tmp_directory, exist_ok=True)
@@ -25,10 +25,10 @@ def parse(project_dir, filepath, exclude):
 
     # Invoke joern
     joern_bin = Path('./old-joern/joern-parse')
-    joern_parsed = Path('parsed')
+    joern_parsed = root / 'parsed'
     if joern_parsed.exists():
         shutil.rmtree(joern_parsed)
-    cmd = f'{joern_bin} {tmp_directory}'
+    cmd = f'{joern_bin} {tmp_directory} -outdir {joern_parsed}'
     proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if proc.returncode != 0:
         print(proc.stdout.decode())

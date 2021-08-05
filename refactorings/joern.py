@@ -3,8 +3,8 @@ import networkx as nx
 import dataclasses
 
 class JoernInfo:
-    def __init__(self, c_file, project, exclude):
-        self.g = cpg.parse(project, c_file, exclude)
+    def __init__(self, c_file, project, exclude, tmp_dir):
+        self.g = cpg.parse(tmp_dir, project, c_file, exclude)
         self.ast = self.g.edge_subgraph([e for e, d in self.g.edges.items()
                             if d["type"] == 'IS_AST_PARENT']).copy()
         self.cfg = self.g.edge_subgraph([e for e, d in self.g.edges.items()

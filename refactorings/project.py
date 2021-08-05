@@ -10,7 +10,7 @@ class TransformationProject:
     def __init__(self, transforms, picker, project, c_filename, exclude, keep_tmp):
         self.transforms = copy.deepcopy(transforms)
         self.picker = picker
-        self.info = {"exclude": exclude}
+        self.exclude = exclude
 
         self.project, self.c_filename = project, c_filename
 
@@ -27,7 +27,6 @@ class TransformationProject:
 
         self.project = tmp_project
         self.c_filename = tmp_c_filename
-        self.info["project"] = self.c_filename.parent
         
         self.transform_filename = self.c_filename.parent / (self.c_filename.stem + '.transforms.txt')
         if self.transform_filename.exists():
@@ -55,7 +54,7 @@ class TransformationProject:
 
     def apply(self, t):
         try:
-            new_lines = t(self.c_filename, picker=self.picker, info=self.info).run()
+            new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir).run()
 
             # If it could not be applied, skip this transformation.
             # Most commonly means the transformation had no slot.
