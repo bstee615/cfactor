@@ -7,19 +7,24 @@ from lxml.builder import ElementMaker
 import subprocess
 from pathlib import Path
 import re
+import os
+import copy
 
-import cpg
-import importlib
-importlib.reload(cpg)
-
-srcml_exe = 'srcml/bin/srcml'
+srcml_install = Path('srcml')
+srcml_exe = srcml_install / 'bin/srcml'
+srcml_env = copy.deepcopy(os.environ)
+srcml_env["LD_LIBRARY_PATH"] = str(srcml_install / 'lib')
 namespaces={'src': 'http://www.srcML.org/srcML/src'}
 E = ElementMaker(namespace="http://www.srcML.org/srcML/src")
 
 
 # Print XML from root
-def prettyprint(node):
-    print(et.tostring(node, encoding="unicode", pretty_print=True))
+def prettyprint(node, return_string=False):
+    s = et.tostring(node, encoding="unicode", pretty_print=True)
+    if return_string:
+        return s
+    else:
+        print(s)
 # prettyprint(xmldata)
 
 def xp(node, xpath):
@@ -56,8 +61,8 @@ def srcml(filepath):
     args = [str(a) for a in args]
     if filepath.suffix == '.c':
         args += ['--position']
-    # print('Running SrcML:', ' '.join(args))
-    proc = subprocess.run(args, capture_output=True)
+    
+    proc = subprocess.run(args, env=srcml_env, capture_output=True)
     if proc.returncode != 0:
         print('Error', proc.returncode)
         print(proc.stderr)
