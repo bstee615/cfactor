@@ -1,4 +1,5 @@
 from pathlib import Path
+import srcml
 import refactorings
 from refactorings.joern import JoernInfo
 
@@ -31,6 +32,7 @@ class BaseTransformation:
             self.info["exclude"] = None
 
         self.joern = JoernInfo(self.c_file, self.info["project"], self.info["exclude"])
+        self.srcml_root = srcml.get_xml_from_file(self.c_file)
 
     def run(self):
         all_targets = self.get_targets()

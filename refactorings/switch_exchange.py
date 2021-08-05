@@ -9,10 +9,6 @@ from refactorings import clang_format
 from refactorings.base import BaseTransformation
 
 class SwitchExchange(BaseTransformation):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.root = srcml.get_xml_from_file(self.c_file)
-
     def get_stmts_by_case(self, switch):
         """
         Return an ordered mapping of executable statements to their respective case ranges.
@@ -128,12 +124,12 @@ class SwitchExchange(BaseTransformation):
         return if_stmt
 
     def get_targets(self):
-        all_switches = xp(self.root, f'//src:switch')
+        all_switches = xp(self.srcml_root, f'//src:switch')
         return all_switches
 
     def apply(self, target):
         # TODO: filter switches by ones with static expression (no function call).
         if_stmt = self.gen_if_stmt(target)
         target.getparent().replace(target, if_stmt)
-        new_lines = srcml.get_code(self.root).splitlines(keepends=True)
+        new_lines = srcml.get_code(self.srcml_root).splitlines(keepends=True)
         return clang_format.reformat(self.old_lines, new_lines)
