@@ -112,3 +112,22 @@ def test_loop_exchange():
         old_lines = f.readlines()
     new_lines = loop_exchange(c_file, info={"project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (2, 1)
+
+def test_project():
+    import refactorings
+    c_file = Path('tests/testbed/testbed.c')
+    default_transforms = (
+        refactorings.insert_noop,
+        refactorings.switch_exchange,
+        refactorings.loop_exchange,
+        refactorings.rename_variable,
+        refactorings.permute_stmt,
+    )
+    factory = refactorings.TransformationsFactory(transforms=default_transforms, picker=lambda a: a[0], num_iterations=5)
+    with factory.make_project(c_file) as project:
+        new_filename = project.apply_all()
+        with open(c_file) as f:
+            old_lines = f.readlines()
+        with open(new_filename) as f:
+            new_lines = f.readlines()
+        assert count_diff(old_lines, new_lines) == (13, 16)
