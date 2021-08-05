@@ -31,23 +31,23 @@ def test_permute_stmt():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = permute_stmt(c_file, info={"project": 'tests/testbed'})
+    new_lines = permute_stmt(c_file, info={"project": 'tests/testbed', "exclude": None})
     assert count_diff(old_lines, new_lines) == (1, 1)
 
     c_file = Path('tests/abm/594/nonul2.c')
     # Should only be 1 independent pair
-    new_lines = permute_stmt(c_file, info={"project": 'tests/abm/594'})
+    new_lines = permute_stmt(c_file, info={"project": 'tests/abm/594', "exclude": None})
 
     c_file = Path('tests/ctestsuite/111/fmt_string_local_container.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/111'})
+    new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/111', "exclude": None})
     assert new_lines is None, print_diff(old_lines, new_lines)
 
     c_file = Path('tests/ctestsuite/199/lock_resource.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/199'})
+    new_lines = permute_stmt(c_file, info={"project": 'tests/ctestsuite/199', "exclude": None})
     assert count_diff(old_lines, new_lines) == (2, 2), print_diff(old_lines, new_lines)
 
 
@@ -55,7 +55,7 @@ def test_rename_variable():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = rename_variable(c_file, info={"project": 'tests/testbed'})
+    new_lines = rename_variable(c_file, info={"project": 'tests/testbed', "exclude": None})
     assert count_diff(old_lines, new_lines) == (5, 5)
 
 
@@ -63,7 +63,7 @@ def test_insert_noop():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = insert_noop(c_file, info={"project": c_file.parent})
+    new_lines = insert_noop(c_file, info={"project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (1, 0)
 
 
@@ -80,35 +80,35 @@ def test_loop_exchange():
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = loop_exchange(c_file, picker=lambda x: x[0], info={
-                              "project": c_file.parent})
+                              "project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (3, 1)
     new_lines = loop_exchange(c_file, picker=lambda x: x[1], info={
-                              "project": c_file.parent})
+                              "project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (3, 1)
     new_lines = loop_exchange(c_file, picker=lambda x: x[2], info={
-                              "project": c_file.parent})
+                              "project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (4, 1)
 
     c_file = Path('tests/abm/575/into3.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    new_lines = loop_exchange(c_file, info={"project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (5, 2)
 
     c_file = Path('tests/ctestsuite/153/os_cmd_loop.c')
     with open(c_file) as f:
         old_lines = f.readlines()
     with pytest.raises(Exception, match='insufficient location info'):
-        new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+        new_lines = loop_exchange(c_file, info={"project": c_file.parent, "exclude": None})
 
     c_file = Path('tests/crlf/crlf.c')
     with open(c_file) as f:
         old_lines = f.readlines()
     with pytest.raises(Exception, match='CRLF'):
-        new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+        new_lines = loop_exchange(c_file, info={"project": c_file.parent, "exclude": None})
 
     c_file = Path('tests/ctestsuite/125/heap_overflow_cplx.c')
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = loop_exchange(c_file, info={"project": c_file.parent})
+    new_lines = loop_exchange(c_file, info={"project": c_file.parent, "exclude": None})
     assert count_diff(old_lines, new_lines) == (2, 1)

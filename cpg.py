@@ -13,14 +13,15 @@ def gather_stmts(nodes):
             statements.append(node)
     return statements
 
-def parse(project_dir, filepath):
+def parse(project_dir, filepath, exclude):
     # Copy file to tmp directory
     tmp_directory = Path('tmp')
     if tmp_directory.exists():
         shutil.rmtree(tmp_directory)
     os.makedirs(tmp_directory, exist_ok=True)
     dst_dir = tmp_directory / project_dir.name
-    shutil.copytree(project_dir, dst_dir)
+    assert not dst_dir.exists()
+    shutil.copytree(project_dir, dst_dir, ignore=exclude)
 
     # Invoke joern
     joern_bin = Path('./old-joern/joern-parse')

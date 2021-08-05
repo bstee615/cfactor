@@ -6,7 +6,7 @@ import cpg
 
 
 def insert_noop(c_file, picker=lambda i: i[0], info=None):
-    g = cpg.parse(Path(info["project"]), Path(c_file))
+    g = cpg.parse(Path(info["project"]), Path(c_file), info["exclude"])
     ast = g.edge_subgraph([e for e, d in g.edges.items() if d["type"] == 'IS_AST_PARENT']).copy()
     node_type = nx.get_node_attributes(g, 'type')
     node_location = nx.get_node_attributes(g, 'location')

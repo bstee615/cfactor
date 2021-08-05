@@ -18,7 +18,7 @@ class JoernLocation:
 
 
 def loop_exchange(c_file, picker=lambda i: i[0], info=None):
-    g = cpg.parse(Path(info["project"]), Path(c_file))
+    g = cpg.parse(Path(info["project"]), Path(c_file), info["exclude"])
     ast = g.edge_subgraph([e for e, d in g.edges.items() if d["type"] == 'IS_AST_PARENT']).copy()
     # If file has CRLF line endings, then it will screw with Python's counting the file offsets.
     with open(c_file, newline='\r\n') as f:

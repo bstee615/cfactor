@@ -121,7 +121,7 @@ def swap_lines(a, b, g, c_file):
 
 def permute_stmt(c_file, picker=lambda i: i[0], info=None):
     assert info is not None
-    g = cpg.parse(Path(info["project"]), Path(c_file))
+    g = cpg.parse(Path(info["project"]), Path(c_file), info["exclude"])
     basic_blocks = get_basic_blocks(g)
     # print('blocks:', basic_blocks)
     candidate_blocks = [b for b in basic_blocks if len(b) > 1]
