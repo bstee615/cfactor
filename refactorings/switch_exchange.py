@@ -4,7 +4,7 @@ from collections import OrderedDict
 import copy
 
 import srcml
-from srcml import xp, E
+from srcml import prettyprint, xp, E
 from refactorings import clang_format
 
 def get_stmts_by_case(switch):
@@ -41,6 +41,11 @@ def get_stmts_by_case(switch):
             pass
         else:
             raise Exception(f'Unknown statement tag ends a switch: {tag_name}')
+        for stmt in stmts:
+            n = xp(stmt, './/src:break')
+            # TODO: Convert these to nested if/else (else block is everything after the condition wrapping the break)
+            if n:
+                raise Exception(f'Break occurs in the middle of a switch statement: {prettyprint(stmt, return_string=True)}')
 
     # Disallow all fallthrough blocks because they are not sound
     def get_case_text(cases):
@@ -122,6 +127,7 @@ def switch_exchange(c_file, picker=lambda i: i[0], info=None):
     if len(all_switches) == 0:
         return None
     target = picker(all_switches)
+    # TODO: filter switches by ones with static expression (no function call).
     if_stmt = gen_if_stmt(target)
     target.getparent().replace(target, if_stmt)
     new_lines = srcml.get_code(root).splitlines(keepends=True)
