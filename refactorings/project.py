@@ -68,7 +68,7 @@ class TransformationProject:
             self.log_transforms_applied(t)
             with open(self.c_filename, 'w') as f:
                 f.writelines(new_lines)
-            shutil.copy2(self.c_filename, self.tmp_dir / (f'{self.c_filename.name}.{len(self.transformations_applied)}'))
+            shutil.copy2(self.c_filename, self.tmp_dir / (f'{self.c_filename.name}.{len(self.transformations_applied)}.{t.__name__}'))
             self.transforms.remove(t)
             self.transformations_applied.append(t)
             self.log('Applied', t.__name__)
@@ -78,10 +78,10 @@ class TransformationProject:
             self.log_error(traceback.format_exc())
             self.transforms.remove(t)
 
-    def apply_all(self):
+    def apply_all(self, return_applied=False):
         """Do C source-to-source translation"""
 
-        self.transforms_applied = []
+        self.transformations_applied = []
 
         # Apply all transforms one at a time
         shutil.copy2(self.c_filename, self.tmp_dir / (self.c_filename.name + '.back'))
@@ -91,7 +91,10 @@ class TransformationProject:
                 break
             t = self.transforms[0]
             self.apply(t)
-        return Path(self.c_filename)
+        if return_applied:
+            return Path(self.c_filename), self.transformations_applied
+        else:
+            return Path(self.c_filename)
 
 
 class TransformationsFactory:
