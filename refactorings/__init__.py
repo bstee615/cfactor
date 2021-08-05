@@ -10,21 +10,21 @@ Excluded:
 - Boolean Exchange (BX) - switches the value of a boolean variable and propagates this change in the method.
 """
 
-from refactorings.insert_noop import insert_noop
-from refactorings.rename_variable import rename_variable
-from refactorings.permute_stmt import permute_stmt
-from refactorings.switch_exchange import switch_exchange
-from refactorings.loop_exchange import loop_exchange
+from refactorings.insert_noop import InsertNoop
+from refactorings.rename_variable import RenameVariable
+from refactorings.permute_stmt import PermuteStmt
+from refactorings.switch_exchange import SwitchExchange
+from refactorings.loop_exchange import LoopExchange
 from refactorings.project import TransformationsFactory
 import random
 import sys
 
 all_refactorings = [
-    insert_noop,
-    loop_exchange,
-    permute_stmt,
-    rename_variable,
-    switch_exchange,
+    InsertNoop,
+    LoopExchange,
+    PermuteStmt,
+    RenameVariable,
+    SwitchExchange,
 ]
 
 def random_picker(targets):

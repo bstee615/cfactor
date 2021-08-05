@@ -55,7 +55,7 @@ class TransformationProject:
 
     def apply(self, t):
         try:
-            new_lines = t(self.c_filename, picker=self.picker, info=self.info)
+            new_lines = t(self.c_filename, picker=self.picker, info=self.info).run()
 
             # If it could not be applied, skip this transformation.
             # Most commonly means the transformation had no slot.
