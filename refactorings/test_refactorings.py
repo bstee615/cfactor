@@ -72,7 +72,7 @@ def test_switch_exchange():
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = switch_exchange(c_file)
-    assert count_diff(old_lines, new_lines) == (17, 9)
+    assert count_diff(old_lines, new_lines) == (4, 10)
 
 
 def test_loop_exchange():

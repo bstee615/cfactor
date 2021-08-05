@@ -5,6 +5,7 @@ import copy
 
 import srcml
 from srcml import xp, E
+from refactorings import clang_format
 
 def get_stmts_by_case(switch):
     """
@@ -123,4 +124,8 @@ def switch_exchange(c_file, picker=lambda i: i[0], info=None):
     target = picker(all_switches)
     if_stmt = gen_if_stmt(target)
     target.getparent().replace(target, if_stmt)
-    return srcml.get_code(root).splitlines(keepends=True)
+    new_lines = srcml.get_code(root).splitlines(keepends=True)
+
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    return clang_format.reformat(old_lines, new_lines)
