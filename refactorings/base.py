@@ -36,8 +36,14 @@ class BaseTransformation:
         else:
             self.info["tmp_dir"] = Path('/tmp')
 
-        self.joern = JoernInfo(self.c_file, self.info["project"], self.info["exclude"], self.info["tmp_dir"])
-        self.srcml_root = srcml.get_xml_from_file(self.c_file)
+        try:
+            self.joern = JoernInfo(self.c_file, self.info["project"], self.info["exclude"], self.info["tmp_dir"])
+        except:
+            self.joern = None
+        try:
+            self.srcml_root = srcml.get_xml_from_file(self.c_file)
+        except:
+            self.srcml_root = None
 
     def run(self):
         all_targets = self.get_targets()

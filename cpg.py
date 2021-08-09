@@ -5,6 +5,9 @@ import subprocess
 from pathlib import Path
 import shutil
 
+joern_bin = Path('./old-joern/joern-parse')
+assert joern_bin.exists()
+
 def gather_stmts(nodes):
     statements = []
     for node in nodes:
@@ -24,7 +27,6 @@ def parse(root, project_dir, filepath, exclude):
     shutil.copytree(project_dir, dst_dir, ignore=exclude)
 
     # Invoke joern
-    joern_bin = Path('./old-joern/joern-parse')
     joern_parsed = root / 'parsed'
     if joern_parsed.exists():
         shutil.rmtree(joern_parsed)

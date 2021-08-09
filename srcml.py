@@ -12,8 +12,10 @@ import copy
 
 srcml_install = Path('srcml')
 srcml_exe = srcml_install / 'bin/srcml'
+assert srcml_exe.exists()
+
 srcml_env = copy.deepcopy(os.environ)
-srcml_env["LD_LIBRARY_PATH"] = str(srcml_install / 'lib')
+srcml_env["LD_LIBRARY_PATH"] = str(srcml_install / 'lib') + ':' + srcml_env["LD_LIBRARY_PATH"]
 namespaces={'src': 'http://www.srcML.org/srcML/src'}
 E = ElementMaker(namespace="http://www.srcML.org/srcML/src")
 
