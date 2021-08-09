@@ -6,6 +6,7 @@ from refactorings.joern import JoernInfo
 
 class BaseTransformation:
     def __init__(self, c_file, **kwargs):
+        # Load target source file
         self.c_file = Path(c_file)
         with open(self.c_file) as f:
             self.old_lines = f.readlines()
@@ -15,29 +16,13 @@ class BaseTransformation:
         if '\r' in self.old_text:
             raise Exception(f'{c_file} is CRLF')
         
-        if "picker" in kwargs:
-            self.picker = kwargs.get("picker")
-        else:
-            self.picker = refactorings.first_picker
-
-        self.info = {}
-        if "project" in kwargs:
-            self.info["project"] = Path(kwargs.get("project"))
-        else:
-            self.info["project"] = self.c_file.parent
-
-        if "exclude" in kwargs:
-            self.info["exclude"] = kwargs.get("exclude")
-        else:
-            self.info["exclude"] = None
-
-        if "tmp_dir" in kwargs:
-            self.info["tmp_dir"] = Path(kwargs.get("tmp_dir"))
-        else:
-            self.info["tmp_dir"] = Path('/tmp')
+        self.picker = kwargs.get("picker", refactorings.first_picker)
 
         try:
-            self.joern = JoernInfo(self.c_file, self.info["project"], self.info["exclude"], self.info["tmp_dir"])
+            project = Path(kwargs.get("project", self.c_file.parent))
+            exclude_files = kwargs.get("exclude", None)
+            tmp_dir = Path(kwargs.get("tmp_dir", '/tmp'))
+            self.joern = JoernInfo(self.c_file, project, exclude_files, tmp_dir)
         except:
             self.joern = None
         try:
