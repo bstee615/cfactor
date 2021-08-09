@@ -1,0 +1,9 @@
+lxml
+networkx
+pandas
+tqdm
+runipy
+jupyter
+ipykernel
+pytest
+
