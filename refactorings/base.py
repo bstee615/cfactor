@@ -2,6 +2,8 @@ from pathlib import Path
 import srcml
 import refactorings
 from refactorings.joern import JoernInfo
+import difflib
+import copy
 
 
 class BaseTransformation:
@@ -17,6 +19,7 @@ class BaseTransformation:
             raise Exception(f'{c_file} is CRLF')
         
         self.picker = kwargs.get("picker", refactorings.first_picker)
+        self.avoid_lineno = set(kwargs.get("avoid_lines", set()))
 
         try:
             project = Path(kwargs.get("project", self.c_file.parent))
@@ -32,7 +35,26 @@ class BaseTransformation:
 
     def run(self):
         all_targets = self.get_targets()
-        if len(all_targets) == 0:
-            return None
-        target = self.picker(all_targets)
-        return self.apply(target)
+        new_lines = None
+        while len(all_targets) > 0:
+            target = self.picker(all_targets)
+            old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
+            new_lines = self.apply(target)
+            if new_lines is None:
+                return None
+            elif len(self.avoid_lineno) == 0:
+                return new_lines
+            else:
+                # Check if the off-limits lines are changed
+                diff = list(difflib.ndiff(self.old_lines, new_lines))
+                changed_or_same = [d for d in diff if d[:2] in ('  ', '- ')]
+                changed_lines_idx = {i for i, l in enumerate(changed_or_same) if l[:2] == '- '}
+                changed_linenos = {i+1 for i in changed_lines_idx}
+                if changed_linenos.intersection(self.avoid_lineno):
+                    new_lines = None
+                    all_targets.remove(target)
+                    self.srcml_root = old_srcml_root
+                    self.joern = old_joern
+                else:
+                    return new_lines
+        return new_lines

@@ -55,6 +55,15 @@ def test_rename_variable():
     assert count_diff(old_lines, new_lines) == (5, 5)
 
 
+def test_avoid():
+    """Should avoid renaming x and instead rename y (second choice)."""
+    c_file = Path('tests/testbed/testbed.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = RenameVariable(c_file, avoid_lines=[57]).run()
+    assert count_diff(old_lines, new_lines) == (7, 7)
+
+
 def test_insert_noop():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
@@ -69,6 +78,15 @@ def test_switch_exchange():
         old_lines = f.readlines()
     new_lines = SwitchExchange(c_file).run()
     assert count_diff(old_lines, new_lines) == (4, 10)
+
+
+def test_switch_exchange_avoid():
+    c_file = Path('tests/testbed/testbed.c')
+    new_lines = list(SwitchExchange(c_file).run())
+    new_lines2 = list(SwitchExchange(c_file, avoid_lines=[43]).run())
+    assert new_lines == new_lines2  # Should be the same
+    new_lines3 = SwitchExchange(c_file, avoid_lines=[42]).run()
+    assert new_lines3 is None  # Should only be one opportunity for switch exchange, which is excluded
 
 
 def test_loop_exchange():
