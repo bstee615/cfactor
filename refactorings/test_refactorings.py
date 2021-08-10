@@ -101,28 +101,24 @@ def test_loop_exchange():
     assert count_diff(old_lines, new_lines) == (4, 1)
 
     c_file = Path('tests/abm/575/into3.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     new_lines = LoopExchange(c_file).run()
     assert count_diff(old_lines, new_lines) == (5, 2)
 
     c_file = Path('tests/ctestsuite/153/os_cmd_loop.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     with pytest.raises(Exception, match='insufficient location info'):
         new_lines = LoopExchange(c_file).run()
 
     c_file = Path('tests/crlf/crlf.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     with pytest.raises(Exception, match='CRLF'):
         new_lines = LoopExchange(c_file).run()
 
     c_file = Path('tests/ctestsuite/125/heap_overflow_cplx.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     new_lines = LoopExchange(c_file).run()
     assert count_diff(old_lines, new_lines) == (2, 1)
+
+def test_loop_badnode():
+    c_file = Path('tests/ctestsuite/107/dble_free_local_flow.c')
+    assert LoopExchange(c_file).run() is None
 
 def test_project():
     c_file = Path('tests/testbed/testbed.c')

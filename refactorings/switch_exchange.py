@@ -2,6 +2,7 @@
 # Refactoring: exchange switch with if/else
 from collections import OrderedDict
 import copy
+from refactorings.bad_node_exception import BadNodeException
 
 import srcml
 from srcml import prettyprint, xp, E
@@ -42,12 +43,12 @@ class SwitchExchange(BaseTransformation):
             elif tag_name == 'return':
                 pass
             else:
-                raise Exception(f'Unknown statement tag ends a switch: {tag_name}')
+                raise BadNodeException(f'Unknown statement tag ends a switch: {tag_name}')
             for stmt in stmts:
                 n = xp(stmt, './/src:break')
                 # TODO: Convert these to nested if/else (else block is everything after the condition wrapping the break)
                 if n:
-                    raise Exception(f'Break occurs in the middle of a switch statement: {prettyprint(stmt, return_string=True)}')
+                    raise BadNodeException(f'Break occurs in the middle of a switch statement: {prettyprint(stmt, return_string=True)}')
 
         # Disallow all fallthrough blocks because they are not sound
         def get_case_text(cases):

@@ -1,5 +1,6 @@
 """Loop exchange: exchange for loop with while"""
 
+from refactorings.bad_node_exception import BadNodeException
 from refactorings.base import BaseTransformation
 from refactorings.joern import JoernLocation
 
@@ -17,7 +18,7 @@ class LoopExchange(BaseTransformation):
             init = None
             cond, post, stmt = succ
         else:
-            raise Exception('Unexpected loop subtree structure')
+            raise BadNodeException('Unexpected loop subtree structure')
         assert self.joern.node_type[cond] == 'Condition'
         assert self.joern.node_type[stmt].endswith('Statement')
 
@@ -34,7 +35,7 @@ class LoopExchange(BaseTransformation):
         if stmt_is_compound:
             stmt = max(self.joern.g.successors(stmt), key=lambda n: self.joern.node_childNum[n])
             if self.joern.node_type[stmt] in janky_location_stmts:
-                raise Exception('Loop does not qualify because its last statement has insufficient location info')
+                raise BadNodeException('Loop does not qualify because its last statement has insufficient location info')
         assert self.joern.node_type[stmt].endswith('Statement')
         
         # Get code and location for the interesting nodes

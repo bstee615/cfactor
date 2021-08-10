@@ -1,4 +1,5 @@
 from pathlib import Path
+from refactorings.bad_node_exception import BadNodeException
 import srcml
 import refactorings
 from refactorings.joern import JoernInfo
@@ -39,7 +40,16 @@ class BaseTransformation:
         while len(all_targets) > 0:
             target = self.picker(all_targets)
             old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
+            try:
             new_lines = self.apply(target)
+            except BadNodeException as e:
+                new_lines = None
+                all_targets.remove(target)
+                self.srcml_root = old_srcml_root
+                self.joern = old_joern
+                with open('errors.log', 'a') as f:
+                    print(f'BadNodeException: {e}', file=f)
+                continue
             if new_lines is None:
                 return None
             elif len(self.avoid_lineno) == 0:
@@ -55,6 +65,7 @@ class BaseTransformation:
                     all_targets.remove(target)
                     self.srcml_root = old_srcml_root
                     self.joern = old_joern
+                    continue
                 else:
                     return new_lines
         return new_lines
