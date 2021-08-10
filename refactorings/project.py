@@ -8,7 +8,7 @@ import os
 
 
 class TransformationProject:
-    def __init__(self, transforms, picker, project, c_filename, exclude, keep_tmp):
+    def __init__(self, transforms, picker, project, c_filename, exclude, keep_tmp, avoid):
         self.transforms = copy.deepcopy(transforms)
         self.picker = picker
         self.exclude = exclude
@@ -16,6 +16,7 @@ class TransformationProject:
         self.project, self.c_filename = project, c_filename
 
         self.keep_tmp = keep_tmp
+        self.avoid = avoid
                 
     def __enter__(self):
         self.tmp_dir = Path(tempfile.mkdtemp())
@@ -56,7 +57,7 @@ class TransformationProject:
 
     def apply(self, t):
         try:
-            new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir).run()
+            new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir, avoid_lines=self.avoid).run()
 
             # If it could not be applied, skip this transformation.
             # Most commonly means the transformation had no slot.
@@ -103,7 +104,7 @@ class TransformationsFactory:
         self.transforms = copy.deepcopy(list(transforms))
         self.picker = picker
 
-    def make_project(self, c_filename, project=None, exclude=None, keep_tmp=False):
+    def make_project(self, c_filename, project=None, exclude=None, keep_tmp=False, avoid=None):
         if project is None:
             project = c_filename.parent
-        return TransformationProject(self.transforms, self.picker, project, c_filename, exclude, keep_tmp=keep_tmp)
+        return TransformationProject(self.transforms, self.picker, project, c_filename, exclude, keep_tmp=keep_tmp, avoid=avoid)

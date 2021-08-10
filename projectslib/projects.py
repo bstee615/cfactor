@@ -1,19 +1,28 @@
 import pandas as pd
-import dataclasses
+from dataclasses import dataclass, field
 from path import Path
 
 code_root = Path('tests')
 
-@dataclasses.dataclass
+@dataclass(unsafe_hash=True)
 class ProjectInfo:
-    program: str
-    buggy: str
-    ok: str
+    program: str = field(hash=True)
+    buggy: str = field(hash=True)
+    ok: str = field(hash=True)
 
     def __post_init__(self):
         if self.program == 'find':
             self.program = 'findutils'
         self.init_paths()
+        self.replace_unicode()
+    
+    @property
+    def versions(self):
+        return self.buggy, self.ok
+    
+    @property
+    def versions_with_paths(self):
+        return zip((self.buggy, self.ok), (self.buggy_path, self.ok_path))
 
     def init_paths(self) -> str:
         self.program_path = code_root / self.program
@@ -25,6 +34,14 @@ class ProjectInfo:
         assert self.buggy_path.exists(), self.buggy_path
         assert self.ok_path.exists(), self.ok_path
 
+    def replace_unicode(self):
+        files = list(self.buggy_path.glob('**/*.c') + self.buggy_path.glob('*.c') + self.ok_path.glob('**/*.c') + self.ok_path.glob('*.c'))
+        for fname in files:
+            with open(fname, 'r', encoding='utf-8', errors='replace') as f:
+                text = f.read()
+            with open(fname, 'w', encoding='utf-8') as f:
+                f.write(text)
+
 def get_iter(project_filter):
     df = pd.read_csv('all.csv')
     
@@ -33,4 +50,8 @@ def get_iter(project_filter):
             yield ProjectInfo(row["Program"], row["Intro Commit ID"], row["Fixed Commit ID"])
 
 def get(project_filter):
-    return list(get_iter(project_filter))
+    projects = list(get_iter(project_filter))
+    from projectslib.groundtruth import get_all
+    projects = get_all(projects)
+    projects = sorted(projects, key=lambda p: str(p.program_path))
+    return projects
