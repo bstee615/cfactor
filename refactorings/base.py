@@ -27,11 +27,11 @@ class BaseTransformation:
             exclude_files = kwargs.get("exclude", None)
             tmp_dir = Path(kwargs.get("tmp_dir", '/tmp'))
             self.joern = JoernInfo(self.c_file, project, exclude_files, tmp_dir)
-        except:
+        except Exception:
             self.joern = None
         try:
             self.srcml_root = srcml.get_xml_from_file(self.c_file)
-        except:
+        except Exception:
             self.srcml_root = None
 
     def run(self):
@@ -41,7 +41,7 @@ class BaseTransformation:
             target = self.picker(all_targets)
             old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
             try:
-            new_lines = self.apply(target)
+                new_lines = self.apply(target)
             except BadNodeException as e:
                 new_lines = None
                 all_targets.remove(target)
