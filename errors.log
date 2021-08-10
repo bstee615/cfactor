@@ -1,0 +1,59 @@
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+***Exception /tmp/tmp2zu9qkq9/01.w_Defects tests/toyota/01.w_Defects tests/toyota/01.w_Defects/src/endless_loop.c LoopExchange (2021-08-10 09:56:15.631219)*** 
+Traceback (most recent call last):
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/project.py", line 60, in apply
+    new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir, avoid_lines=self.avoid).run()
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/base.py", line 44, in run
+    new_lines = self.apply(target)
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/loop_exchange.py", line 22, in apply
+    assert self.joern.node_type[cond] == 'Condition'
+AssertionError
+
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Unknown statement tag ends a switch: block
+***Exception /tmp/tmpkvc3evdk/01.w_Defects tests/toyota/01.w_Defects tests/toyota/01.w_Defects/src/memory_allocation_failure.c LoopExchange (2021-08-10 09:58:21.261914)*** 
+Traceback (most recent call last):
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/project.py", line 60, in apply
+    new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir, avoid_lines=self.avoid).run()
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/base.py", line 44, in run
+    new_lines = self.apply(target)
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/loop_exchange.py", line 22, in apply
+    assert self.joern.node_type[cond] == 'Condition'
+AssertionError
+
+BadNodeException: Unknown statement tag ends a switch: block
+***Exception /tmp/tmpnnm1aw35/01.w_Defects tests/toyota/01.w_Defects tests/toyota/01.w_Defects/src/not_return.c SwitchExchange (2021-08-10 09:58:44.979871)*** list index out of range
+Traceback (most recent call last):
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/project.py", line 60, in apply
+    new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir, avoid_lines=self.avoid).run()
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/base.py", line 44, in run
+    new_lines = self.apply(target)
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/switch_exchange.py", line 133, in apply
+    if_stmt = self.gen_if_stmt(target)
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/switch_exchange.py", line 123, in gen_if_stmt
+    ifs.append(gen_conditional(cases, stmts, ELIF))
+  File "/mnt/Hydrogen_Volume/benjis/work/transform/refactorings/switch_exchange.py", line 95, in gen_conditional
+    stmts[-1].tail = '\n'
+IndexError: list index out of range
+
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Loop does not qualify because its last statement has insufficient location info
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Unknown statement tag ends a switch: block
+BadNodeException: Loop does not qualify because its last statement has insufficient location info

@@ -43,7 +43,7 @@ class ProjectInfo:
                 f.write(text)
 
 def get_iter(project_filter):
-    df = pd.read_csv('all.csv')
+    df = pd.read_csv('nb/all.csv')
     
     for _, row in df.iterrows():
         if row["Program"] in project_filter:

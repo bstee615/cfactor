@@ -6,7 +6,7 @@ import re
 
 def corebench_manual():
     result = defaultdict(functools.partial(defaultdict, list))
-    df = pd.read_csv('corebench_manual_groundtruth.tsv', delimiter='\t')
+    df = pd.read_csv('nb/corebench_manual_groundtruth.tsv', delimiter='\t')
     for _, row in df.iterrows():
         for buggy_line in row["Line of Bug Crash"].split(','):
             buggy_line = int(buggy_line)
