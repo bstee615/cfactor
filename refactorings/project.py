@@ -4,6 +4,7 @@ import copy
 import traceback
 import datetime
 import tempfile
+import os
 
 
 class TransformationProject:
@@ -22,9 +23,10 @@ class TransformationProject:
         tmp_project = self.tmp_dir / self.project.name
         shutil.copytree(self.project, tmp_project)
 
-        tmp_c_filename = tmp_project / self.c_filename.relative_to(self.project)
+        tmp_c_filename = tmp_project / os.path.relpath(self.c_filename, self.project)
         shutil.copy(self.c_filename, tmp_c_filename)
 
+        self.original_project, self.original_c_filename = self.project, self.c_filename
         self.project = tmp_project
         self.c_filename = tmp_c_filename
         
@@ -67,13 +69,13 @@ class TransformationProject:
             self.log_transforms_applied(t)
             with open(self.c_filename, 'w') as f:
                 f.writelines(new_lines)
-            shutil.copy2(self.c_filename, self.tmp_dir / (f'{self.c_filename.name}.{len(self.transformations_applied)}.{t.__name__}'))
+            shutil.copy2(self.c_filename, self.c_filename.with_suffix(f'.c.{len(self.transformations_applied)}.{t.__name__}'))
             self.transforms.remove(t)
             self.transformations_applied.append(t)
             self.log('Applied', t.__name__)
         except Exception as e:
             self.log(f'Error applying {t.__name__}: {e}. Stack trace written to errors.log.')
-            self.log_error(f'***Exception {self.project} {self.project} {t.__name__} ({datetime.datetime.now()})***', e)
+            self.log_error(f'***Exception {self.project} {self.original_project} {self.original_c_filename} {t.__name__} ({datetime.datetime.now()})***', e)
             self.log_error(traceback.format_exc())
             self.transforms.remove(t)
 
