@@ -120,6 +120,17 @@ def test_loop_badnode():
     c_file = Path('tests/ctestsuite/107/dble_free_local_flow.c')
     assert LoopExchange(c_file).run() is None
 
+def test_switch_avoid_strip():
+    """
+    In this case, the lines to avoid (62) is formatted by clang-format, even though the text is not changed by the refactoring.
+    This test checks that we are ignoring whitespace on either side of each line.
+    """
+    c_file = Path('tests/ctestsuite/107/dble_free_local_flow.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = SwitchExchange(c_file, avoid_lines=[62]).run()
+    assert count_diff(old_lines, new_lines) == (11, 14)
+
 def test_project():
     c_file = Path('tests/testbed/testbed.c')
     factory = TransformationsFactory(transforms=all_refactorings, picker=first_picker)

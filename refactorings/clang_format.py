@@ -25,7 +25,7 @@ def lines_arg(line_nums):
 def count_diff(old_lines, new_lines):
     """Return the line numbers where there are additions, indexed in the new file."""
     differ = difflib.Differ()
-    diffs = differ.compare(old_lines, new_lines)
+    diffs = list(differ.compare(old_lines, new_lines))
     r = []
     line_nums = []
     lineno = 0

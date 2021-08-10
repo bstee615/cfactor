@@ -55,8 +55,10 @@ class BaseTransformation:
             elif len(self.avoid_lineno) == 0:
                 return new_lines
             else:
-                # Check if the off-limits lines are changed
-                diff = list(difflib.ndiff(self.old_lines, new_lines))
+                # Check if the off-limits lines are changed.
+                # Ignore whitespace on the left and right.
+                # TODO: Also ignore intra-line whitespace?
+                diff = list(difflib.ndiff([l.strip() + '\n' for l in self.old_lines], [l.strip() + '\n' for l in new_lines]))
                 changed_or_same = [d for d in diff if d[:2] in ('  ', '- ')]
                 changed_lines_idx = {i for i, l in enumerate(changed_or_same) if l[:2] == '- '}
                 changed_linenos = {i+1 for i in changed_lines_idx}
