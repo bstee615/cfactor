@@ -2,6 +2,14 @@ from pathlib import Path
 import subprocess
 import tempfile
 import difflib
+import shutil
+
+
+clang_format_exe = shutil.which('clang-format')
+if clang_format_exe is None:
+    clang_format_exe = '../clang+llvm-6.0.1-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format'
+clang_format_exe = Path(clang_format_exe)
+assert clang_format_exe.exists()
 
 
 def lines_arg(line_nums):
@@ -17,7 +25,7 @@ def lines_arg(line_nums):
 def count_diff(old_lines, new_lines):
     """Return the line numbers where there are additions, indexed in the new file."""
     differ = difflib.Differ()
-    diffs = differ.compare(old_lines, new_lines)
+    diffs = list(differ.compare(old_lines, new_lines))
     r = []
     line_nums = []
     lineno = 0
@@ -48,6 +56,6 @@ def reformat(old_lines, new_lines):
         tmpfile = tmpdir / 'tmp.c'
         with open(tmpfile, 'w') as f:
             f.writelines(new_lines)
-        subprocess.run(f'clang-format {" ".join(lines)} {f.name} -i {style}', shell=True, capture_output=True, check=True)
+        subprocess.run(f'{clang_format_exe} {" ".join(lines)} {f.name} -i {style}', shell=True, capture_output=True, check=True)
         with open(tmpfile, 'r') as f:
             return f.readlines()

@@ -1,0 +1,2 @@
+class BadNodeException(Exception):
+    pass

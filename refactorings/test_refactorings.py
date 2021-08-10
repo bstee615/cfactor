@@ -55,6 +55,15 @@ def test_rename_variable():
     assert count_diff(old_lines, new_lines) == (5, 5)
 
 
+def test_avoid():
+    """Should avoid renaming x and instead rename y (second choice)."""
+    c_file = Path('tests/testbed/testbed.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = RenameVariable(c_file, avoid_lines=[57]).run()
+    assert count_diff(old_lines, new_lines) == (7, 7)
+
+
 def test_insert_noop():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
@@ -71,6 +80,15 @@ def test_switch_exchange():
     assert count_diff(old_lines, new_lines) == (4, 10)
 
 
+def test_switch_exchange_avoid():
+    c_file = Path('tests/testbed/testbed.c')
+    new_lines = list(SwitchExchange(c_file).run())
+    new_lines2 = list(SwitchExchange(c_file, avoid_lines=[43]).run())
+    assert new_lines == new_lines2  # Should be the same
+    new_lines3 = SwitchExchange(c_file, avoid_lines=[42]).run()
+    assert new_lines3 is None  # Should only be one opportunity for switch exchange, which is excluded
+
+
 def test_loop_exchange():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
@@ -83,28 +101,35 @@ def test_loop_exchange():
     assert count_diff(old_lines, new_lines) == (4, 1)
 
     c_file = Path('tests/abm/575/into3.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     new_lines = LoopExchange(c_file).run()
     assert count_diff(old_lines, new_lines) == (5, 2)
 
     c_file = Path('tests/ctestsuite/153/os_cmd_loop.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     with pytest.raises(Exception, match='insufficient location info'):
         new_lines = LoopExchange(c_file).run()
 
     c_file = Path('tests/crlf/crlf.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     with pytest.raises(Exception, match='CRLF'):
         new_lines = LoopExchange(c_file).run()
 
     c_file = Path('tests/ctestsuite/125/heap_overflow_cplx.c')
-    with open(c_file) as f:
-        old_lines = f.readlines()
     new_lines = LoopExchange(c_file).run()
     assert count_diff(old_lines, new_lines) == (2, 1)
+
+def test_loop_badnode():
+    c_file = Path('tests/ctestsuite/107/dble_free_local_flow.c')
+    assert LoopExchange(c_file).run() is None
+
+def test_switch_avoid_strip():
+    """
+    In this case, the lines to avoid (62) is formatted by clang-format, even though the text is not changed by the refactoring.
+    This test checks that we are ignoring whitespace on either side of each line.
+    """
+    c_file = Path('tests/ctestsuite/107/dble_free_local_flow.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = SwitchExchange(c_file, avoid_lines=[62]).run()
+    assert count_diff(old_lines, new_lines) == (11, 14)
 
 def test_project():
     c_file = Path('tests/testbed/testbed.c')
