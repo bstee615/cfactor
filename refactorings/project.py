@@ -22,7 +22,7 @@ class TransformationProject:
         self.tmp_dir = Path(tempfile.mkdtemp())
 
         tmp_project = self.tmp_dir / self.project.name
-        shutil.copytree(self.project, tmp_project)
+        shutil.copytree(self.project, tmp_project, ignore=self.exclude)
 
         tmp_c_filename = tmp_project / os.path.relpath(self.c_filename, self.project)
         shutil.copy(self.c_filename, tmp_c_filename)
