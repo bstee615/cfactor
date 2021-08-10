@@ -76,8 +76,7 @@ class TransformationProject:
             self.log('Applied', t.__name__)
         except Exception as e:
             self.log(f'Error applying {t.__name__}: {e}. Stack trace written to errors.log.')
-            self.log_error(f'***Exception {self.project} {self.original_project} {self.original_c_filename} {t.__name__} ({datetime.datetime.now()})***', e)
-            self.log_error(traceback.format_exc())
+            self.log_error(f'***Exception {self.project} {self.original_project} {self.original_c_filename} {t.__name__} ({datetime.datetime.now()})***', e, '\n', traceback.format_exc())
             self.transforms.remove(t)
 
     def apply_all(self, return_applied=False):

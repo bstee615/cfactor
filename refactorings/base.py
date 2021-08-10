@@ -20,7 +20,10 @@ class BaseTransformation:
             raise Exception(f'{c_file} is CRLF')
         
         self.picker = kwargs.get("picker", refactorings.first_picker)
-        self.avoid_lineno = set(kwargs.get("avoid_lines", set()))
+        if "avoid_lines" in kwargs:
+            self.avoid_lineno = kwargs.get("avoid_lines")
+        else:
+            self.avoid_lineno = set()
 
         try:
             project = Path(kwargs.get("project", self.c_file.parent))
@@ -52,7 +55,7 @@ class BaseTransformation:
                 continue
             if new_lines is None:
                 return None
-            elif len(self.avoid_lineno) == 0:
+            elif self.avoid_lineno is None or len(self.avoid_lineno) == 0:
                 return new_lines
             else:
                 # Check if the off-limits lines are changed.
