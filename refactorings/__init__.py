@@ -20,11 +20,11 @@ import random
 import sys
 
 all_refactorings = [
-    InsertNoop,
-    LoopExchange,
-    PermuteStmt,
     RenameVariable,
     SwitchExchange,
+    LoopExchange,
+    PermuteStmt,
+    InsertNoop,
 ]
 
 def random_picker(targets):
