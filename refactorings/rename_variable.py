@@ -3,6 +3,7 @@
 import srcml
 from srcml import xp
 from refactorings.base import BaseTransformation
+from refactorings.random_word import get_random_word
 
 class RenameVariable(BaseTransformation):
     def get_targets(self):
@@ -11,7 +12,7 @@ class RenameVariable(BaseTransformation):
 
     def apply(self, target):
         old_target_name = target.text
-        new_target_name = 'fungus'
+        new_target_name = get_random_word()
 
         function_name = xp(
             xp(target, './ancestor::src:function')[0], './src:name')[0].text

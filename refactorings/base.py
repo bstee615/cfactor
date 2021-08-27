@@ -5,6 +5,8 @@ import refactorings
 from refactorings.joern import JoernInfo
 import difflib
 import copy
+import random
+import traceback
 
 
 class BaseTransformation:
@@ -18,6 +20,8 @@ class BaseTransformation:
             self.old_text = f.read()
         if '\r' in self.old_text:
             raise Exception(f'{c_file} is CRLF')
+            
+        self.rng = random.Random(0)
         
         self.picker = kwargs.get("picker", refactorings.first_picker)
         if "avoid_lines" in kwargs:
@@ -25,23 +29,28 @@ class BaseTransformation:
         else:
             self.avoid_lineno = set()
 
+        project = Path(kwargs.get("project", self.c_file.parent))
         try:
-            project = Path(kwargs.get("project", self.c_file.parent))
             exclude_files = kwargs.get("exclude", None)
             tmp_dir = Path(kwargs.get("tmp_dir", '/tmp'))
             self.joern = JoernInfo(self.c_file, project, exclude_files, tmp_dir)
-        except Exception:
+        except Exception as e:
             self.joern = None
+            with open('errors.log', 'a') as f:
+                f.write(f'Error loading Joern for {project} {self.c_file}: {e}\n{traceback.format_exc()}\n')
+
         try:
             self.srcml_root = srcml.get_xml_from_file(self.c_file)
-        except Exception:
+        except Exception as e:
             self.srcml_root = None
+            with open('errors.log', 'a') as f:
+                f.write(f'Error loading srcML for {project} {self.c_file}: {e}\n{traceback.format_exc()}\n')
 
     def run(self):
         all_targets = self.get_targets()
         new_lines = None
         while len(all_targets) > 0:
-            target = self.picker(all_targets)
+            target = self.picker(all_targets, rng=self.rng)
             old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
             try:
                 new_lines = self.apply(target)
@@ -51,7 +60,7 @@ class BaseTransformation:
                 self.srcml_root = old_srcml_root
                 self.joern = old_joern
                 with open('errors.log', 'a') as f:
-                    print(f'BadNodeException: {e}', file=f)
+                    print(f'BadNodeException({self.c_file}): {e}', file=f)
                 continue
             if new_lines is None:
                 return None

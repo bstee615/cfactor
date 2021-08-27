@@ -13,14 +13,17 @@ class LoopExchange(BaseTransformation):
         succ = list(self.joern.ast.successors(target))
         if len(succ) == 4:
             init, cond, post, stmt = succ
-            assert self.joern.node_type[init] == 'ForInit', f'expected \'ForInit\' got {self.joern.node_type[init]}'
+            if self.joern.node_type[init] != 'ForInit':
+                raise BadNodeException(f'Node {init} should be type ForInit but has type {self.joern.node_type[init]}')
         elif len(succ) == 3:
             init = None
             cond, post, stmt = succ
         else:
             raise BadNodeException('Unexpected loop subtree structure')
-        assert self.joern.node_type[cond] == 'Condition'
-        assert self.joern.node_type[stmt].endswith('Statement')
+        if self.joern.node_type[cond] != 'Condition':
+            raise BadNodeException(f'Node {cond} should have type Condition but has type {self.joern.node_type[cond]}')
+        if not self.joern.node_type[stmt].endswith('Statement'):
+            raise BadNodeException(f'Node {stmt} should be some Statement type but has type {self.joern.node_type[stmt]}')
 
         # Some statements are disqualified
         janky_location_stmts = (
@@ -36,7 +39,8 @@ class LoopExchange(BaseTransformation):
             stmt = max(self.joern.g.successors(stmt), key=lambda n: self.joern.node_childNum[n])
             if self.joern.node_type[stmt] in janky_location_stmts:
                 raise BadNodeException('Loop does not qualify because its last statement has insufficient location info')
-        assert self.joern.node_type[stmt].endswith('Statement')
+        if not self.joern.node_type[stmt].endswith('Statement'):
+            raise BadNodeException('Node {stmt} should be some Statement type but has type {self.joern.node_type[stmt]}')
         
         # Get code and location for the interesting nodes
         cond_code = self.joern.node_code[cond]

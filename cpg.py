@@ -16,28 +16,52 @@ def gather_stmts(nodes):
             statements.append(node)
     return statements
 
+def list_files(startpath):
+    for root, dirs, files in os.walk(startpath):
+        level = root.count(os.sep)
+        indent = ' ' * 4 * (level)
+        print('{}{}/'.format(indent, os.path.basename(root)))
+        subindent = ' ' * 4 * (level + 1)
+        for f in files:
+            print('{}{}'.format(subindent, f))
+
 def parse(root, project_dir, filepath, exclude):
+    #print('root:', root)
+    #list_files(str(root))
+
     # Copy file to tmp directory
-    tmp_directory = root / 'tmp'
-    if tmp_directory.exists():
-        shutil.rmtree(tmp_directory)
-    os.makedirs(tmp_directory, exist_ok=True)
-    dst_dir = tmp_directory / project_dir.name
-    assert not dst_dir.exists()
-    shutil.copytree(project_dir, dst_dir, ignore=exclude)
+    #suffix = str(filepath.absolute()).replace('/', '_')
+    #if suffix[0] == '_':
+    #    suffix = suffix[1:]
+    #tmp_directory = root / (suffix)
+    #if tmp_directory.exists():
+    #    shutil.rmtree(tmp_directory)
+    #tmp_directory.mkdir()
+    #dst_filepath = tmp_directory / filepath.name
+    #shutil.copy(filepath, dst_filepath)
+
+    dst_filepath = filepath
+    tmp_directory = filepath.parent
+
+    #dst_dir = tmp_directory / project_dir.name
+    #assert not dst_dir.exists()
+    #shutil.copytree(project_dir, dst_dir, ignore=exclude)
 
     # Invoke joern
-    joern_parsed = root / 'parsed'
+    joern_parsed = root / ('parsed_' + filepath.name)
     if joern_parsed.exists():
         shutil.rmtree(joern_parsed)
-    cmd = f'{joern_bin} {tmp_directory} -outdir {joern_parsed}'
+    cmd = f'{joern_bin} {tmp_directory.absolute()} -outdir {joern_parsed}'
+    #print('cmd:', cmd)
     proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if proc.returncode != 0:
         print(proc.stdout.decode())
         return
 
     # Read joern output
-    output_path = next((joern_parsed).glob(f'**/{filepath.name}'))
+    #output_path = next((joern_parsed).glob(f'**/{filepath.name}'))
+    output_path = joern_parsed / str(dst_filepath.absolute())[1:]
+    #print('output_path:', output_path)
     nodes_path = output_path / 'nodes.csv'
     edges_path = output_path / 'edges.csv'
     nodes_df = pd.read_csv(nodes_path, sep='\t')

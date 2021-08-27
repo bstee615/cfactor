@@ -16,7 +16,6 @@ from refactorings.permute_stmt import PermuteStmt
 from refactorings.switch_exchange import SwitchExchange
 from refactorings.loop_exchange import LoopExchange
 from refactorings.project import TransformationsFactory
-import random
 import sys
 
 all_refactorings = [
@@ -27,11 +26,12 @@ all_refactorings = [
     InsertNoop,
 ]
 
-def random_picker(targets):
+def random_picker(targets, **kwargs):
+    rng = kwargs.get("rng")
     assert len(targets) > 0, 'Collection is empty'
-    return random.choice(targets)
+    return rng.choice(targets)
 
-def first_picker(targets):
+def first_picker(targets, **kwargs):
     assert len(targets) > 0, 'Collection is empty'
     return targets[0]
 

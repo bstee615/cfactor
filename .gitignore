@@ -27,3 +27,6 @@ srcml.tar.gz
 *.tar
 env
 openssl
+slurm-*.out
+*.tar.gz
+new_functions.pkl.shard*
