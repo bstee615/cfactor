@@ -1,4 +1,6 @@
 import os, argparse
+import tempfile
+
 import networkx as nx
 import pandas as pd
 import subprocess
@@ -15,7 +17,6 @@ def gather_stmts(nodes):
     statements = []
     for node in nodes:
         if node["isCFGNode"] == True and node["type"].endswith('Statement') and node["code"]:
-            # statements.append((node["type"], node["code"], node["location"]))
             statements.append(node)
     return statements
 
@@ -28,52 +29,24 @@ def list_files(startpath):
         for f in files:
             logger.debug('{}{}'.format(subindent, f))
 
-    # Copy file to tmp directory
-    #suffix = str(filepath.absolute()).replace('/', '_')
-    #if suffix[0] == '_':
-    #    suffix = suffix[1:]
-    #tmp_directory = root / (suffix)
-    #if tmp_directory.exists():
-    #    shutil.rmtree(tmp_directory)
-    #tmp_directory.mkdir()
-    #dst_filepath = tmp_directory / filepath.name
-    #shutil.copy(filepath, dst_filepath)
-
+def parse(project_dir, filepath, exclude):
     dst_filepath = filepath
-    tmp_directory = filepath.parent
-
-    #dst_dir = tmp_directory / project_dir.name
-    #assert not dst_dir.exists()
-    #shutil.copytree(project_dir, dst_dir, ignore=exclude)
 
     # Invoke joern
-    joern_parsed = root / ('parsed_' + filepath.name)
-    if joern_parsed.exists():
-        shutil.rmtree(joern_parsed)
-    cmd = f'{joern_bin} {tmp_directory.absolute()} -outdir {joern_parsed}'
-    #print('cmd:', cmd)
-    proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    if proc.returncode != 0:
-        print(proc.stdout.decode())
-        return
+    with tempfile.TemporaryDirectory() as joern_parse_dir:
+        joern_parse_dir = Path(joern_parse_dir) / 'parsed'
+        cmd = f'bash {joern_bin} {filepath.parent.absolute()} -outdir {joern_parse_dir.absolute()}'
+        proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if proc.returncode != 0:
+            logger.error(proc.stdout.decode())
 
-    # Read joern output
-    #output_path = next((joern_parsed).glob(f'**/{filepath.name}'))
-    output_path = joern_parsed / str(dst_filepath.absolute())[1:]
-    #print('output_path:', output_path)
-    nodes_path = output_path / 'nodes.csv'
-    edges_path = output_path / 'edges.csv'
-    nodes_df = pd.read_csv(nodes_path, sep='\t')
-    edges_df = pd.read_csv(edges_path, sep='\t')
+        output_path = joern_parse_dir / str(dst_filepath.absolute())[1:]
+        assert output_path.exists()
+        nodes_path = output_path / 'nodes.csv'
+        edges_path = output_path / 'edges.csv'
+        nodes_df = pd.read_csv(nodes_path, sep='\t')
+        edges_df = pd.read_csv(edges_path, sep='\t')
 
-    # graph_types = [
-    #     ('AST', 'IS_AST_PARENT', {"color": 'black'}),
-    #     ('CDG', 'CONTROLS', {"color": 'blue'}),
-    #     ('DDG', 'REACHES', {"color": 'red'}),
-    #     ('CFG', 'FLOWS_TO', {"color": 'blue'}),
-    #     ('DFG', 'REACHES', {"color": 'red'}),
-    # ]
-    # graphs = {}
     cpg = nx.MultiDiGraph()
     nodes_attributes = [{k:v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in nodes_df.iterrows()]
     for na in nodes_attributes:
@@ -85,35 +58,6 @@ def list_files(startpath):
     edges_attributes = [dict(row) for i, row in edges_df.iterrows()]
     edges = list(zip(edges_df["start"].values.tolist(), edges_df["end"].values.tolist(), edges_attributes))
     cpg.add_edges_from(edges)
-
-    # Per type
-    # for graph_type, edge_type, extra_edge_attributes in graph_types:
-    #     G = nx.DiGraph()
-    #     # graphs[graph_type] = G
-
-    #     edge_type_df = edges_df[edges_df["type"] == edge_type]
-    #     edges_attributes = [dict(row) for i, row in edge_type_df.iterrows()]
-    #     for ea in edges_attributes:
-    #         ea.update(extra_edge_attributes)
-    #     edges = list(zip(edge_type_df["start"].values.tolist(), edge_type_df["end"].values.tolist(), edges_attributes))
-        
-    #     G.add_nodes_from(nodes)
-    #     G.add_edges_from(edges)
-    #     G.remove_nodes_from(list(nx.isolates(G)))
-    #     cpg.add_edges_from(edges)
-
-    # print(list(cpg.nodes))
-    # print(list(cpg.nodes.values()))
-    # stmts = gather_stmts(cpg.nodes.values())
-    # for d in stmts:
-    #     print(d["key"], d["code"])
-    # from networkx.drawing.nx_agraph import write_dot
-    # cfg = cpg.edge_subgraph([e for e, d in cpg.edges.items()
-    #                       if d["type"] == 'FLOWS_TO']).copy()
-    # write_dot(cfg, 'cfg.dot')
-    # write_dot(graphs["AST"], 'ast.dot')
-    # write_dot(graphs["CDG"], 'cdg.dot')
-    # write_dot(graphs["DDG"], 'ddg.dot')
 
     return cpg
 
