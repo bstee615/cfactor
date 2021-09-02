@@ -4,7 +4,6 @@ from pathlib import Path
 from refactorings.bad_node_exception import BadNodeException
 import refactorings
 from refactorings.joern import JoernInfo
-import srcml
 import difflib
 import copy
 import random
@@ -55,16 +54,7 @@ class BaseTransformation(abc.ABC):
             copy_out = kwargs.get("copy_out", False)
             self.joern = JoernInfo(self.c_file, project, exclude_files, copy_out)
         except Exception as e:
-            self.joern = None
             self.logger.exception(e)
-
-        try:
-            self.srcml_root = srcml.get_xml_from_file(self.c_file)
-        except Exception as e:
-            self.srcml_root = None
-            self.logger.exception(e)
-
-        assert not all((self.joern is None, self.srcml_root is None)), 'no framework could be loaded'
 
     @abc.abstractmethod
     def get_targets(self, target):
@@ -99,14 +89,11 @@ class BaseTransformation(abc.ABC):
         new_lines = None
         while len(all_targets) > 0:
             target = self.picker(all_targets, rng=self.rng)
-            old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
             try:
                 new_lines = self.run_target(target)
             except BadNodeException as e:
                 new_lines = None
                 all_targets.remove(target)
-                self.srcml_root = old_srcml_root
-                self.joern = old_joern
                 self.logger.info(f'Bad node target={self.joern.node_type[target]} at {self.c_file}{self.joern.node_location[target]}: {e}')
                 continue
             if new_lines is None:
@@ -124,8 +111,6 @@ class BaseTransformation(abc.ABC):
                 if changed_linenos.intersection(self.avoid_lineno):
                     new_lines = None
                     all_targets.remove(target)
-                    self.srcml_root = old_srcml_root
-                    self.joern = old_joern
                     continue
                 else:
                     return new_lines

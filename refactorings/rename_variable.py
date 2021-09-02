@@ -1,7 +1,5 @@
 """Rename Variable: replace a local variable's name."""
 
-import srcml
-from srcml import xp
 from refactorings.base import BaseTransformation
 from refactorings.random_word import get_random_word
 import networkx.algorithms.dag as nx_algo
