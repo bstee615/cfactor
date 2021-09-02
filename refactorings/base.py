@@ -1,3 +1,4 @@
+import abc
 import shutil
 from pathlib import Path
 from refactorings.bad_node_exception import BadNodeException
@@ -23,7 +24,7 @@ class PrefixedLoggerAdapter(logging.LoggerAdapter):
         return '[%s] %s' % (self.prefix, msg), kwargs
 
 
-class BaseTransformation:
+class BaseTransformation(abc.ABC):
     logger = logging.getLogger('BaseTransformation')
 
     def __init__(self, c_file, **kwargs):
@@ -51,7 +52,8 @@ class BaseTransformation:
 
         try:
             exclude_files = kwargs.get("exclude", None)
-            self.joern = JoernInfo(self.c_file, project, exclude_files)
+            copy_out = kwargs.get("copy_out", False)
+            self.joern = JoernInfo(self.c_file, project, exclude_files, copy_out)
         except Exception as e:
             self.joern = None
             self.logger.exception(e)
@@ -62,11 +64,35 @@ class BaseTransformation:
             self.srcml_root = None
             self.logger.exception(e)
 
-    def apply_wrapper(self, target):
+        assert not all((self.joern is None, self.srcml_root is None)), 'no framework could be loaded'
+
+    @abc.abstractmethod
+    def get_targets(self, target):
+        """
+        Get targets to be consumed by get_targets.
+        All targets should have a useful equality function (i.e. works well with list.remove()).
+        """
+        pass
+
+    @abc.abstractmethod
+    def _apply(self, target):
+        """
+        Apply the transformation to self.c_file and return new lines for the file.
+        Throw all exceptions up to be caught by run_target().
+        """
+        pass
+
+    def run_target(self, target):
         try:
-            return self.apply(target)
+            return self._apply(target)
         except (NotImplementedError, AssertionError) as e:
             raise BadNodeException(*e.args)
+
+    @classmethod
+    def get_indent(cls, line):
+        return line[:-len(line.lstrip())]
+    def get_location(self, n):
+        return JoernLocation.fromstring(self.joern.node_location[n])
 
     def run(self):
         all_targets = self.get_targets()
@@ -75,13 +101,13 @@ class BaseTransformation:
             target = self.picker(all_targets, rng=self.rng)
             old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
             try:
-                new_lines = self.apply_wrapper(target)
-            except BadNodeException:
+                new_lines = self.run_target(target)
+            except BadNodeException as e:
                 new_lines = None
                 all_targets.remove(target)
                 self.srcml_root = old_srcml_root
                 self.joern = old_joern
-                self.logger.exception(f'target={self.joern.node_type[target]}@{self.joern.node_location[target]}')
+                self.logger.info(f'Bad node target={self.joern.node_type[target]} at {self.c_file}{self.joern.node_location[target]}: {e}')
                 continue
             if new_lines is None:
                 return None

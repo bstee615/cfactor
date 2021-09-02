@@ -29,12 +29,15 @@ def list_files(startpath):
         for f in files:
             logger.debug('{}{}'.format(subindent, f))
 
-def parse(project_dir, filepath, exclude):
+def parse(project_dir, filepath, exclude, copy_out=False):
     dst_filepath = filepath
 
     # Invoke joern
     with tempfile.TemporaryDirectory() as joern_parse_dir:
         joern_parse_dir = Path(joern_parse_dir) / 'parsed'
+        if copy_out:
+            joern_parse_dir.mkdir('tmp')
+            shutil.copy2(filepath, joern_parse_dir)
         cmd = f'bash {joern_bin} {filepath.parent.absolute()} -outdir {joern_parse_dir.absolute()}'
         proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if proc.returncode != 0:
@@ -64,7 +67,9 @@ def parse(project_dir, filepath, exclude):
                     end_offset += 1
                 na["location"] = ':'.join(str(o) for o in (col, line, offset, end_offset))
             elif na["type"] == 'ExpressionStatement':
-                if na["code"][-1] != ';' and file_text[end_offset] == ';':
+                if na["code"] == '':
+                    pass
+                elif na["code"][-1] != ';' and file_text[end_offset] == ';':
                     na["code"] += ';'
     nodes = list(zip(nodes_df["key"].values.tolist(), nodes_attributes))
     cpg.add_nodes_from(nodes)

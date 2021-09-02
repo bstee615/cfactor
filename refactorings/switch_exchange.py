@@ -19,15 +19,7 @@ class SwitchExchange(BaseTransformation):
     def get_targets(self):
         return [n for n, d in self.joern.ast.nodes.items() if d["type"] == 'SwitchStatement']
 
-    def apply(self, target):
-        def get_indent(line):
-            return line[:-len(line.lstrip())]
-        def get_location(n):
-            return JoernLocation.fromstring(self.joern.node_location[n])
-        def get_type(n):
-            return self.joern.node_type[n]
-        def get_code(n):
-            return self.joern.node_code[n]
+    def _apply(self, target):
 
         # TODO: filter switches by ones with static expression (no function call).
         cond, compound = self.joern.ast.successors(target)
@@ -61,18 +53,18 @@ class SwitchExchange(BaseTransformation):
 
         # TODO: check no fall-through using CFG
 
-        target_location = get_location(target)
-        switch_indent = get_indent(self.old_lines[target_location.line])
+        target_location = self.joern.node_location[target]
+        switch_indent = self.get_indent(self.old_lines[target_location.line])
         # Find the first child that isn't a label and get its indentation.
         # If there is none, default to the first label.
         for n in stmts_in_compound:
             first_body_child = n
             if self.joern.node_type[n] != 'Label':
                 break
-        first_body_child = get_location(first_body_child)
-        body_indent = get_indent(self.old_lines[first_body_child.line])
+        first_body_child = self.joern.node_location[first_body_child]
+        body_indent = self.get_indent(self.old_lines[first_body_child.line])
 
-        compound_location = get_location(compound)
+        compound_location = self.joern.node_location[compound]
 
         new_text = self.old_text[:target_location.offset]
         # Add in new if/elses
@@ -88,10 +80,10 @@ class SwitchExchange(BaseTransformation):
 
             # If condition
             def get_if_condition():
-                switch_cond_code = get_code(cond)
+                switch_cond_code = self.joern.node_code[cond]
                 label_exprs = []
                 for n in labels:
-                    label_code = get_code(n)
+                    label_code = self.joern.node_code[n]
                     m = re.fullmatch(r'\s*default\s*:', label_code)
                     if m is not None:
                         if i != len(blocks)-1:
@@ -114,13 +106,7 @@ class SwitchExchange(BaseTransformation):
             self.logger.debug(f'if_cond_code="{if_cond_code}"')
 
             # Wrap code statements in {}
-            # stmts_lines = []
-            # for n in stmts:
-                # stmt_code = get_code(n)
-                # if not stmt_code.rstrip()[-1] not in (';', ')', '}'):
-                #     stmt_code += ';'
-                # stmts_lines.append(stmt_code)
-            stmts_code = ('\n' + body_indent).join(map(get_code, stmts))
+            stmts_code = ('\n' + body_indent).join(self.joern.node_code[stmt] for stmt in stmts)
             stmts_code = switch_indent + '{\n' + body_indent + stmts_code + '\n' + switch_indent + '}'
             self.logger.debug(f'stmts_code="{stmts_code}"')
 
