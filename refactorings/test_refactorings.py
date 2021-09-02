@@ -42,7 +42,9 @@ def test_loop_exchange(input_file, expected):
     assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
 
 @pytest.mark.parametrize("c_file", [
-    ('tests/acceptance/loop_exchange/chrome_debian/18159_0.c'),
+    'tests/acceptance/loop_exchange/chrome_debian/18159_0.c',  # Unexpected loop subtree structure
+    'tests/acceptance/loop_exchange/chrome_debian/4201_0.c',  # Node 178 should have type Condition but has type ForInit
+    'tests/acceptance/loop_exchange/chrome_debian/5919_0.c',# Loop does not qualify because its last statement has insufficient location info
 ])
 def test_loop_exchange_acceptance(c_file):
     c_file = Path(c_file)
@@ -53,7 +55,7 @@ def test_loop_exchange_acceptance(c_file):
     diff_out = diff_lines(old_lines, new_lines)
     with open(diff_file) as f:
         diff_exp = f.readlines()
-        failed_file = diff_file.with_suffix(f'.fail-{datetime.datetime.now()}.patch')
+        failed_file = diff_file.with_suffix(f'.fail_{datetime.datetime.now().strftime("%m-%d-%y_%H-%M-%S")}.patch')
         try:
             assert [l.strip() for l in diff_exp] == [l.strip() for l in diff_out]
         except AssertionError:

@@ -17,10 +17,13 @@ class LoopExchange(BaseTransformation):
             if found is not None:
                 nodes.remove(found)
             return found
+        stmt = succ.pop()
+        assert self.joern.node_type[stmt].endswith('Statement')
         init = pop_node(succ, 'ForInit')
         cond = pop_node(succ, 'Condition')
-        post = pop_node(succ, 'PostIncDecOperationExpression')
-        stmt = next((n for n in succ if self.joern.node_type[n].endswith('Statement')), None)
+        post = succ.pop() if len(succ) > 0 else None
+        if post is not None:
+            assert self.joern.node_type[post].endswith('Expression'), f'post (located at {self.joern.node_location(post)}) should be of some Expression type but is actually {self.joern.node_type[post]}'
         if stmt is None:
             raise BadNodeException(f'Loop at location {self.joern.node_location[target]} has no body')
         stmt_is_compound = self.joern.node_type[stmt] == 'CompoundStatement'
@@ -28,12 +31,6 @@ class LoopExchange(BaseTransformation):
         # Get locations
         loop_loc = JoernLocation.fromstring(self.joern.node_location[target])
         stmt_loc = JoernLocation.fromstring(self.joern.node_location[stmt])
-        # Cover fault in Joern exposed by tests/acceptance/loop_exchange/chrome_debian/18159_0.c
-        if stmt_is_compound:
-            while self.old_text[stmt_loc.offset] != '{':
-                stmt_loc.offset -= 1
-            while self.old_text[stmt_loc.end_offset] != '}':
-                stmt_loc.end_offset += 1
 
         # Get the correct whitespace to indent the loop and the body
         def get_indent(line):
