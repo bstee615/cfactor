@@ -89,6 +89,23 @@ def test_switch_exchange_avoid():
     assert new_lines3 is None  # Should only be one opportunity for switch exchange, which is excluded
 
 
+import pytest
+
+@pytest.mark.parametrize("input_file,expected", [
+    ('tests/unit/loop_exchange.c', (3, 1)),
+    ('tests/unit/loop_exchange_no_init.c', (2, 1)),
+    ('tests/unit/loop_exchange_no_cond.c', (3, 1)),
+    ('tests/unit/loop_exchange_no_post.c', (2, 1)),
+    ('tests/unit/loop_exchange_empty.c', (1, 1)),
+])
+def test_loop_exchange_basic(input_file, expected):
+    c_file = Path(input_file)
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = LoopExchange(c_file).run()
+    assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+
+
 def test_loop_exchange():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
