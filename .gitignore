@@ -6,7 +6,6 @@ joern-cli
 joern-util
 workspace
 llvm-project-11.1.0.src
-tests
 output
 logs
 code-slicer
