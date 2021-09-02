@@ -8,7 +8,7 @@ class InsertNoop(BaseTransformation):
     def get_targets(self):
         def is_target(n):
             is_valid_stmt = self.joern.node_type[n] in ('ExpressionStatement', 'IfStatement', 'ElseStatement', 'ForStatement', 'WhileStatement')
-            has_valid_location = isinstance(self.joern.node_location[n], str)
+            has_valid_location = self.joern.node_location[n] is not None
             pred = list(self.joern.ast.predecessors(n))
             if len(pred) > 0:
                 parent_is_compound = self.joern.node_type[pred[0]] == 'CompoundStatement'
@@ -17,8 +17,8 @@ class InsertNoop(BaseTransformation):
             return is_valid_stmt and parent_is_compound and has_valid_location
         return [self.joern.node_location[n] for n in filter(is_target, self.joern.ast.nodes)]
 
-    def apply(self, target):
-        target_line = int(target.split(':')[0])
+    def _apply(self, target):
+        target_line = int(target.line)
         target_idx = target_line - 1
 
         new_name = get_random_word()

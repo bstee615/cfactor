@@ -1,27 +1,41 @@
 """Rename Variable: replace a local variable's name."""
 
-import srcml
-from srcml import xp
 from refactorings.base import BaseTransformation
 from refactorings.random_word import get_random_word
+import networkx.algorithms.dag as nx_algo
 
 class RenameVariable(BaseTransformation):
     def get_targets(self):
-        all_names = xp(self.srcml_root, f'//src:function//src:decl_stmt/src:decl/src:name')
-        return all_names
+        id_decls = [n for n in self.joern.g.nodes() if self.joern.node_type[n] == 'IdentifierDecl']
+        all_targets = []
+        for d in id_decls:
+            children = list(self.joern.ast.successors(d))
+            if self.joern.node_type[children[0]] == 'IdentifierDeclType' and self.joern.node_type[children[1]] == 'Identifier':
+                all_targets.append(children[1])
+        return all_targets
 
-    def apply(self, target):
-        old_target_name = target.text
+    def _apply(self, target):
+        old_target_name = self.joern.node_code[target]
         new_target_name = get_random_word()
 
-        function_name = xp(
-            xp(target, './ancestor::src:function')[0], './src:name')[0].text
-        var_refs = xp(
-            self.srcml_root, f'//src:name[text() = "{old_target_name}"][ancestor::src:function[./src:name[text() = "{function_name}"]]]')
-        if len(var_refs) == 0:
-            return None
-        for target in var_refs:
-            target.text = new_target_name
+        function_def = target
+        while self.joern.node_type[function_def] != 'FunctionDef':
+            function_def = next(self.joern.ast.predecessors(function_def))
+        nodes_in_function = nx_algo.descendants(self.joern.ast, function_def)
+        var_refs = [n for n in nodes_in_function
+                    if self.joern.node_type[n] == 'Identifier'
+                    and self.joern.node_code[n] == old_target_name]
+        var_refs = sorted(var_refs, key=lambda n: self.joern.node_location[n].offset)
 
-        new_code = srcml.get_code(self.srcml_root)
-        return new_code.splitlines(keepends=True)
+        assert len(var_refs) > 0, f'no references to variable {old_target_name}'
+
+        new_text = ''
+        last_offset = 0
+        for v in var_refs:
+            loc = self.joern.node_location[v]
+            new_text += self.old_text[last_offset:loc.offset]
+            new_text += new_target_name
+            last_offset = loc.end_offset+1
+        new_text += self.old_text[last_offset:]
+
+        return new_text.splitlines(keepends=True)

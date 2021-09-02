@@ -10,7 +10,7 @@ class LoopExchange(BaseTransformation):
     def get_targets(self):
         return [n for n, d in self.joern.ast.nodes.items() if d["type"] == 'ForStatement']
 
-    def apply(self, target):
+    def _apply(self, target):
         succ = list(self.joern.ast.successors(target))
         def pop_node(nodes, node_type):
             found = next((n for n in nodes if self.joern.node_type[n] == node_type), None)
@@ -23,25 +23,23 @@ class LoopExchange(BaseTransformation):
         cond = pop_node(succ, 'Condition')
         post = succ.pop() if len(succ) > 0 else None
         if post is not None:
-            assert self.joern.node_type[post].endswith('Expression'), f'post (located at {self.joern.node_location(post)}) should be of some Expression type but is actually {self.joern.node_type[post]}'
+            assert self.joern.node_type[post].endswith('Expression'), f'post (located at {self.joern.node_location[post]}) should be of some Expression type but is actually {self.joern.node_type[post]}'
         if stmt is None:
             raise BadNodeException(f'Loop at location {self.joern.node_location[target]} has no body')
         stmt_is_compound = self.joern.node_type[stmt] == 'CompoundStatement'
 
         # Get locations
-        loop_loc = JoernLocation.fromstring(self.joern.node_location[target])
-        stmt_loc = JoernLocation.fromstring(self.joern.node_location[stmt])
+        loop_loc = self.joern.node_location[target]
+        stmt_loc = self.joern.node_location[stmt]
 
         # Get the correct whitespace to indent the loop and the body
-        def get_indent(line):
-            return line[:-len(line.lstrip())]
-        loop_indent = get_indent(self.old_lines[loop_loc.line-1])
+        loop_indent = self.get_indent(self.old_lines[loop_loc.line-1])
         if stmt_is_compound:
             stmt_first_line_begin = stmt_loc.offset + self.old_text[stmt_loc.offset:].find('\n') + 1
             stmt_first_line_end = stmt_first_line_begin + self.old_text[stmt_first_line_begin:].find('\n')
-            body_indent = get_indent(self.old_text[stmt_first_line_begin:stmt_first_line_end])
+            body_indent = self.get_indent(self.old_text[stmt_first_line_begin:stmt_first_line_end])
         else:
-            body_indent = get_indent(self.old_lines[stmt_loc.line-1])
+            body_indent = self.get_indent(self.old_lines[stmt_loc.line-1])
 
         # Replace for loop with while (try to preserve whitespace before/after the loop, no guarantees about inside the loop)
         new_text = self.old_text[:loop_loc.offset]

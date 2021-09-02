@@ -29,12 +29,15 @@ def list_files(startpath):
         for f in files:
             logger.debug('{}{}'.format(subindent, f))
 
-def parse(project_dir, filepath, exclude):
+def parse(project_dir, filepath, exclude, copy_out=False):
     dst_filepath = filepath
 
     # Invoke joern
     with tempfile.TemporaryDirectory() as joern_parse_dir:
         joern_parse_dir = Path(joern_parse_dir) / 'parsed'
+        if copy_out:
+            joern_parse_dir.mkdir('tmp')
+            shutil.copy2(filepath, joern_parse_dir)
         cmd = f'bash {joern_bin} {filepath.parent.absolute()} -outdir {joern_parse_dir.absolute()}'
         proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if proc.returncode != 0:
@@ -50,17 +53,24 @@ def parse(project_dir, filepath, exclude):
     cpg = nx.MultiDiGraph()
     nodes_attributes = [{k:v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in nodes_df.iterrows()]
     for na in nodes_attributes:
-        na.update({"label": f'{na["key"]}: {na["code"]}'})
+        na.update({"label": f'{na["key"]} ({na["type"]}): {na["code"]}'}) # Graphviz label
+
         # Cover fault in Joern exposed by tests/acceptance/loop_exchange/chrome_debian/18159_0.c
-        if na["type"] == 'CompoundStatement':
+        if na["type"].endswith('Statement'):
             with open(filepath) as f:
                 file_text = f.read()
             col, line, offset, end_offset = (int(x) for x in na["location"].split(':'))
-            while file_text[offset] != '{':
-                offset -= 1
-            while file_text[end_offset] != '}':
-                end_offset += 1
-            na["location"] = ':'.join(str(o) for o in (col, line, offset, end_offset))
+            if na["type"] == 'CompoundStatement':
+                while file_text[offset] != '{':
+                    offset -= 1
+                while file_text[end_offset] != '}':
+                    end_offset += 1
+                na["location"] = ':'.join(str(o) for o in (col, line, offset, end_offset))
+            elif na["type"] == 'ExpressionStatement':
+                if na["code"] == '':
+                    pass
+                elif na["code"][-1] != ';' and file_text[end_offset] == ';':
+                    na["code"] += ';'
     nodes = list(zip(nodes_df["key"].values.tolist(), nodes_attributes))
     cpg.add_nodes_from(nodes)
 
