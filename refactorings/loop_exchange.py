@@ -3,6 +3,7 @@
 from refactorings.bad_node_exception import BadNodeException
 from refactorings.base import BaseTransformation
 from refactorings.joern import JoernLocation
+import re
 
 
 class LoopExchange(BaseTransformation):
@@ -25,52 +26,47 @@ class LoopExchange(BaseTransformation):
         if not self.joern.node_type[stmt].endswith('Statement'):
             raise BadNodeException(f'Node {stmt} should be some Statement type but has type {self.joern.node_type[stmt]}')
 
-        # Some statements are disqualified
-        janky_location_stmts = (
-            'CompoundStatement',
-            'IfStatement', 'ElseStatement',
-            'ForStatement', 'WhileStatement',
-            'SwitchStatement',
-        )
-        # CompoundStatements don't have reliable code locations,
-        # so get the last statement of the loop body
         stmt_is_compound = self.joern.node_type[stmt] == 'CompoundStatement'
-        if stmt_is_compound:
-            stmt = max(self.joern.g.successors(stmt), key=lambda n: self.joern.node_childNum[n])
-            if self.joern.node_type[stmt] in janky_location_stmts:
-                raise BadNodeException('Loop does not qualify because its last statement has insufficient location info')
-        if not self.joern.node_type[stmt].endswith('Statement'):
-            raise BadNodeException('Node {stmt} should be some Statement type but has type {self.joern.node_type[stmt]}')
         
         # Get code and location for the interesting nodes
-        cond_code = self.joern.node_code[cond]
-        if init is not None:
-            init_code = self.joern.node_code[init]
-        post_code = self.joern.node_code[post]
         loop_loc = JoernLocation.fromstring(self.joern.node_location[target])
         stmt_loc = JoernLocation.fromstring(self.joern.node_location[stmt])
         
+        if init is not None:
+            init_code = self.joern.node_code[init].strip()
+        cond_code = self.joern.node_code[cond].strip()
+        stmt_code = self.old_text[stmt_loc.offset:stmt_loc.end_offset+1].strip()
+        post_code = self.joern.node_code[post].strip()
+        remainder_code = self.old_text[stmt_loc.end_offset+1:].strip()
+        
         # Get the correct whitespace to indent the loop and the body
-        loop_indent = self.old_lines[loop_loc.line-1][:-len(self.old_lines[loop_loc.line-1].lstrip())]
-        body_indent = self.old_lines[stmt_loc.line-1][:-len(self.old_lines[stmt_loc.line-1].lstrip())]
-
-        # Get the last character of the for loop's body
-        if stmt_is_compound:
-            seek = '}\n'
-        else:
-            seek = '\n'
-        proceed_from = self.old_text.find(seek, stmt_loc.end_offset + 1) + len(seek)
+        def get_indent(line):
+            return line[:-len(line.lstrip())]
+        loop_indent = get_indent(self.old_lines[loop_loc.line-1])
+        body_indent = get_indent(self.old_lines[stmt_loc.line-1])
 
         # Replace for loop with while inplace (preserves most whitespace automatically)
         new_text = self.old_text[:loop_loc.offset]
         if init is not None:
             new_text += init_code + '\n' + loop_indent
         new_text += f'while ({cond_code})'
-        if not stmt_is_compound:
-            new_text += ' {'
-        new_text += self.old_text[loop_loc.end_offset+1:stmt_loc.end_offset+1] + '\n'
-        new_text += body_indent + post_code + ';\n'
-        new_text += loop_indent + '}\n'
-        new_text += self.old_text[proceed_from:]
+        if stmt_loc.line == loop_loc.line:
+            new_text += ' '
+        else:
+            new_text += '\n' + {loop_indent}
+        if stmt_is_compound:
+            last_brace_idx = stmt_code.rfind('}')
+            space_idx = last_brace_idx
+            while stmt_code[space_idx] != '\n':
+                space_idx -= 1
+            space_idx += 1
+            body_code = stmt_code[:space_idx] + body_indent + post_code + '\n' + loop_indent + stmt_code[last_brace_idx:]
+        else:
+            body_code = f'''{{
+{body_indent}{stmt_code}
+{body_indent}{post_code}
+{loop_indent}}}\n'''
+        new_text += body_code
+        new_text += remainder_code
         lines = new_text.splitlines(keepends=True)
         return lines
