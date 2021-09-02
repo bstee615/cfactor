@@ -30,3 +30,5 @@ openssl
 slurm-*.out
 *.tar.gz
 new_functions.pkl.shard*
+*.out
+*.log
