@@ -4,9 +4,12 @@ import pandas as pd
 import subprocess
 from pathlib import Path
 import shutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 joern_bin = Path('./old-joern/joern-parse')
-assert joern_bin.exists()
+assert joern_bin.exists(), joern_bin
 
 def gather_stmts(nodes):
     statements = []
@@ -20,14 +23,10 @@ def list_files(startpath):
     for root, dirs, files in os.walk(startpath):
         level = root.count(os.sep)
         indent = ' ' * 4 * (level)
-        print('{}{}/'.format(indent, os.path.basename(root)))
+        logger.debug('{}{}/'.format(indent, os.path.basename(root)))
         subindent = ' ' * 4 * (level + 1)
         for f in files:
-            print('{}{}'.format(subindent, f))
-
-def parse(root, project_dir, filepath, exclude):
-    #print('root:', root)
-    #list_files(str(root))
+            logger.debug('{}{}'.format(subindent, f))
 
     # Copy file to tmp directory
     #suffix = str(filepath.absolute()).replace('/', '_')

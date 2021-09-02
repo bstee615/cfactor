@@ -1,18 +1,36 @@
+import shutil
 from pathlib import Path
 from refactorings.bad_node_exception import BadNodeException
-import srcml
 import refactorings
 from refactorings.joern import JoernInfo
+import srcml
 import difflib
 import copy
 import random
 import traceback
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+# https://stackoverflow.com/a/30007726
+class PrefixedLoggerAdapter(logging.LoggerAdapter):
+    def __init__(self, prefix, logger):
+        super(PrefixedLoggerAdapter, self).__init__(logger, {})
+        self.prefix = prefix
+
+    def process(self, msg, kwargs):
+        return '[%s] %s' % (self.prefix, msg), kwargs
 
 
 class BaseTransformation:
     def __init__(self, c_file, **kwargs):
         # Load target source file
         self.c_file = Path(c_file)
+        project = Path(kwargs.get("project", self.c_file.parent))
+        prefix = f'{project}:{self.c_file}'
+        self.logger = PrefixedLoggerAdapter(prefix, logger)
+
         with open(self.c_file) as f:
             self.old_lines = f.readlines()
         # If file has CRLF line endings, then it will screw with Python's counting the file offsets.
@@ -29,22 +47,18 @@ class BaseTransformation:
         else:
             self.avoid_lineno = set()
 
-        project = Path(kwargs.get("project", self.c_file.parent))
         try:
             exclude_files = kwargs.get("exclude", None)
-            tmp_dir = Path(kwargs.get("tmp_dir", '/tmp'))
-            self.joern = JoernInfo(self.c_file, project, exclude_files, tmp_dir)
+            self.joern = JoernInfo(self.c_file, project, exclude_files)
         except Exception as e:
             self.joern = None
-            with open('errors.log', 'a') as f:
-                f.write(f'Error loading Joern for {project} {self.c_file}: {e}\n{traceback.format_exc()}\n')
+            self.logger.exception(e)
 
         try:
             self.srcml_root = srcml.get_xml_from_file(self.c_file)
         except Exception as e:
             self.srcml_root = None
-            with open('errors.log', 'a') as f:
-                f.write(f'Error loading srcML for {project} {self.c_file}: {e}\n{traceback.format_exc()}\n')
+            self.logger.exception(e)
 
     def run(self):
         all_targets = self.get_targets()
@@ -59,8 +73,7 @@ class BaseTransformation:
                 all_targets.remove(target)
                 self.srcml_root = old_srcml_root
                 self.joern = old_joern
-                with open('errors.log', 'a') as f:
-                    print(f'BadNodeException({self.c_file}): {e}', file=f)
+                self.logger.exception(e, f'({target.__type__.__name__}) {e.__type__.__name__}')
                 continue
             if new_lines is None:
                 return None

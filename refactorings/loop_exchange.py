@@ -12,61 +12,60 @@ class LoopExchange(BaseTransformation):
 
     def apply(self, target):
         succ = list(self.joern.ast.successors(target))
-        if len(succ) == 4:
-            init, cond, post, stmt = succ
-            if self.joern.node_type[init] != 'ForInit':
-                raise BadNodeException(f'Node {init} should be type ForInit but has type {self.joern.node_type[init]}')
-        elif len(succ) == 3:
-            init = None
-            cond, post, stmt = succ
-        else:
-            raise BadNodeException('Unexpected loop subtree structure')
-        if self.joern.node_type[cond] != 'Condition':
-            raise BadNodeException(f'Node {cond} should have type Condition but has type {self.joern.node_type[cond]}')
-        if not self.joern.node_type[stmt].endswith('Statement'):
-            raise BadNodeException(f'Node {stmt} should be some Statement type but has type {self.joern.node_type[stmt]}')
+        def pop_node(nodes, node_type):
+            found = next((n for n in nodes if self.joern.node_type[n] == node_type), None)
+            if found is not None:
+                nodes.remove(found)
+            return found
+        init = pop_node(succ, 'ForInit')
+        cond = pop_node(succ, 'Condition')
+        post = pop_node(succ, 'ForInit')
+        stmt = next((n for n in succ if self.joern.node_type[n].endswith('Statement')), None)
+        if stmt is None:
+            raise BadNodeException(f'Loop at location {self.joern.node_location[target]} has no body')
 
-        stmt_is_compound = self.joern.node_type[stmt] == 'CompoundStatement'
-        
-        # Get code and location for the interesting nodes
+        # Get locations
         loop_loc = JoernLocation.fromstring(self.joern.node_location[target])
         stmt_loc = JoernLocation.fromstring(self.joern.node_location[stmt])
-        
-        if init is not None:
-            init_code = self.joern.node_code[init].strip()
-        cond_code = self.joern.node_code[cond].strip()
-        stmt_code = self.old_text[stmt_loc.offset:stmt_loc.end_offset+1].strip()
-        post_code = self.joern.node_code[post].strip()
-        remainder_code = self.old_text[stmt_loc.end_offset+1:].strip()
-        
+
         # Get the correct whitespace to indent the loop and the body
         def get_indent(line):
             return line[:-len(line.lstrip())]
         loop_indent = get_indent(self.old_lines[loop_loc.line-1])
         body_indent = get_indent(self.old_lines[stmt_loc.line-1])
 
-        # Replace for loop with while inplace (preserves most whitespace automatically)
+        # Replace for loop with while (try to preserve whitespace before/after the loop, no guarantees about inside the loop)
         new_text = self.old_text[:loop_loc.offset]
+
+        # Add init
         if init is not None:
+            init_code = self.joern.node_code[init].strip()
             new_text += init_code + '\n' + loop_indent
-        new_text += f'while ({cond_code})'
-        if stmt_loc.line == loop_loc.line:
-            new_text += ' '
+
+        # Add loop header
+        if cond is None:
+            cond_code = 'true'  # Empty condition is equivalent to while(true) (source: https://en.cppreference.com/w/cpp/language/for)
         else:
-            new_text += '\n' + {loop_indent}
-        if stmt_is_compound:
-            last_brace_idx = stmt_code.rfind('}')
-            space_idx = last_brace_idx
-            while stmt_code[space_idx] != '\n':
-                space_idx -= 1
-            space_idx += 1
-            body_code = stmt_code[:space_idx] + body_indent + post_code + '\n' + loop_indent + stmt_code[last_brace_idx:]
+            cond_code = self.joern.node_code[cond].strip()
+        new_text += f'while ({cond_code})\n'
+
+        # Get post line to add to loop body if applicable
+        if post is None:
+            post_line = ''
         else:
-            body_code = f'''{{
-{body_indent}{stmt_code}
-{body_indent}{post_code}
-{loop_indent}}}\n'''
-        new_text += body_code
-        new_text += remainder_code
+            post_code = self.joern.node_code[post].strip()
+            post_line = body_indent + post_code + '\n'
+        stmt_code = self.old_text[stmt_loc.offset:stmt_loc.end_offset+1].strip()
+        # Add loop body
+        if self.joern.node_type[stmt] == 'CompoundStatement':
+            last_line_offset = stmt_code.rfind('\n')
+            body_code = stmt_code[:last_line_offset] + post_line + stmt_code[last_line_offset:]
+        else:
+            body_code = '{' + body_indent + stmt_code + '\n' + post_line + loop_indent + '}'
+        new_text += loop_indent + body_code
+
+        # Done replacing, add text immediately following the end of the last statement
+        new_text += self.old_text[stmt_loc.end_offset+1:]
+
         lines = new_text.splitlines(keepends=True)
         return lines
