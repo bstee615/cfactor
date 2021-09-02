@@ -46,8 +46,8 @@ class LoopExchange(BaseTransformation):
         # Add init
         if init is not None:
             init_code = self.joern.node_code[init].strip()
-            init_code = '; '.join(init_code.split(','))
-            new_text += init_code + '\n' + loop_indent
+            init_code = '; '.join(c.strip() for c in re.split(r',|;', init_code) if len(c.strip()) > 0)
+            new_text += init_code + ';\n' + loop_indent
 
         # Add loop header
         if cond is None:
