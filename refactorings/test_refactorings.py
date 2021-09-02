@@ -94,6 +94,7 @@ def test_loop_exchange():
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = LoopExchange(c_file, picker=lambda x: x[0]).run()
+    print_diff(old_lines, new_lines)
     assert count_diff(old_lines, new_lines) == (3, 1)
     new_lines = LoopExchange(c_file, picker=lambda x: x[1]).run()
     assert count_diff(old_lines, new_lines) == (3, 1)
