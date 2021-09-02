@@ -34,7 +34,7 @@ import pytest
     ('tests/unit/loop_exchange_no_post.c', (2, 1)),
     ('tests/unit/loop_exchange_empty.c', (1, 1)),
 ])
-def test_loop_exchange(input_file, expected):
+def test_loop_exchange_unit(input_file, expected):
     c_file = Path(input_file)
     with open(c_file) as f:
         old_lines = f.readlines()
@@ -63,6 +63,16 @@ def test_loop_exchange_acceptance(c_file):
             with open(failed_file, 'w') as f:
                 f.writelines(diff_out)
             raise
+
+@pytest.mark.parametrize("input_file,expected", [
+    ('tests/unit/switch_exchange.c', (8, 8)),
+])
+def test_switch_exchange(input_file, expected):
+    c_file = Path(input_file)
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = SwitchExchange(c_file).run()
+    assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
 
 """
 Old tests
@@ -117,7 +127,7 @@ def test_insert_noop():
     assert count_diff(old_lines, new_lines) == (1, 0)
 
 
-def test_switch_exchange():
+def test_switch_exchange_old():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()

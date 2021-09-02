@@ -24,12 +24,14 @@ class PrefixedLoggerAdapter(logging.LoggerAdapter):
 
 
 class BaseTransformation:
+    logger = logging.getLogger('BaseTransformation')
+
     def __init__(self, c_file, **kwargs):
         # Load target source file
         self.c_file = Path(c_file)
         project = Path(kwargs.get("project", self.c_file.parent))
         prefix = f'{project}:{self.c_file}'
-        self.logger = PrefixedLoggerAdapter(prefix, logger)
+        self.logger = PrefixedLoggerAdapter(prefix, self.logger)
 
         with open(self.c_file) as f:
             self.old_lines = f.readlines()
