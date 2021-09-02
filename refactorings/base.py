@@ -62,6 +62,12 @@ class BaseTransformation:
             self.srcml_root = None
             self.logger.exception(e)
 
+    def apply_wrapper(self, target):
+        try:
+            return self.apply(target)
+        except (NotImplementedError, AssertionError) as e:
+            raise BadNodeException(*e.args)
+
     def run(self):
         all_targets = self.get_targets()
         new_lines = None
@@ -69,13 +75,13 @@ class BaseTransformation:
             target = self.picker(all_targets, rng=self.rng)
             old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
             try:
-                new_lines = self.apply(target)
-            except BadNodeException as e:
+                new_lines = self.apply_wrapper(target)
+            except BadNodeException:
                 new_lines = None
                 all_targets.remove(target)
                 self.srcml_root = old_srcml_root
                 self.joern = old_joern
-                self.logger.exception(e, f'({target.__type__.__name__}) {e.__type__.__name__}')
+                self.logger.exception(f'target={self.joern.node_type[target]}@{self.joern.node_location[target]}')
                 continue
             if new_lines is None:
                 return None

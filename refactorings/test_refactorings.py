@@ -2,6 +2,7 @@ import difflib
 from pathlib import Path
 
 from refactorings import *
+from refactorings.bad_node_exception import BadNodeException
 import datetime
 
 
@@ -66,13 +67,24 @@ def test_loop_exchange_acceptance(c_file):
 
 @pytest.mark.parametrize("input_file,expected", [
     ('tests/unit/switch_exchange.c', (8, 8)),
+    ('tests/unit/switch_exchange_default_not_last.c', 'default in the middle of a switch'),
+    ('tests/unit/switch_exchange_fallthrough.c', 'expected BreakStatement but got ExpressionStatement'),
+    ('tests/unit/switch_exchange_empty.c', 'empty switch statement'),
 ])
 def test_switch_exchange(input_file, expected):
     c_file = Path(input_file)
     with open(c_file) as f:
         old_lines = f.readlines()
-    new_lines = SwitchExchange(c_file).run()
-    assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+    r = SwitchExchange(c_file)
+    all_targets = r.get_targets()
+    target = all_targets[0]
+    if isinstance(expected, str):
+        # Expect fail with message
+        with pytest.raises(BadNodeException, match=expected):
+            r.apply_wrapper(target)
+    else:
+        new_lines = r.apply_wrapper(target)
+        assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
 
 """
 Old tests
