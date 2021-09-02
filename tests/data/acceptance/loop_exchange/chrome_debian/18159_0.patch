@@ -1,0 +1,14 @@
+---
++++
+@@ -3,9 +3,8 @@
+  int32_t cmp = 0 ;
+  s1 += pl ;
+  s2 += pl ;
+- for ( ;
+- ;
+- ) {
++ while (true)
++ {
+  int32_t c1 = ( uint8_t ) * s1 ++ ;
+  int32_t c2 = ( uint8_t ) * s2 ++ ;
+  cmp = c1 - c2 ;
