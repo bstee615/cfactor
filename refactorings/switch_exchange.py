@@ -48,7 +48,7 @@ class SwitchExchange(BaseTransformation):
                 n = xp(stmt, './/src:break')
                 # TODO: Convert these to nested if/else (else block is everything after the condition wrapping the break)
                 if n:
-                    raise BadNodeException(f'Break occurs in the middle of a switch statement: {prettyprint(stmt, return_string=True)}')
+                    raise BadNodeException(f'Break occurs in the middle of a switch statement')
 
         # Disallow all fallthrough blocks because they are not sound
         def get_case_text(cases):
@@ -92,7 +92,8 @@ class SwitchExchange(BaseTransformation):
                         sub_exprs.append(sub_expr)
                     if i < len(cases) - 1:
                         sub_exprs.append(E.operator('||'))
-                stmts[-1].tail = '\n'
+                if len(stmts) > 0:
+                    stmts[-1].tail = '\n'
                 condition = E.expr(*sub_exprs)
 
             # We have to use __call__ because calling a funcition named "if" is a syntax error

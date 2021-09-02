@@ -25,3 +25,10 @@ srcml_1.0.0-1_ubuntu20.04.tar.gz
 srcml.tar.gz
 .metals
 *.tar
+env
+openssl
+slurm-*.out
+*.tar.gz
+new_functions.pkl.shard*
+*.out
+*.log

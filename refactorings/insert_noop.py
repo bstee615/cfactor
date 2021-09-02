@@ -1,11 +1,8 @@
 """Insert Noop: insert a statement that doesn't affect any other variables."""
 
-from pathlib import Path
-import networkx as nx
-import cpg
-import random
 from refactorings.base import BaseTransformation
-
+from refactorings.random_word import get_random_word, get_random_typename_value
+import string
 
 class InsertNoop(BaseTransformation):
     def get_targets(self):
@@ -24,13 +21,9 @@ class InsertNoop(BaseTransformation):
         target_line = int(target.split(':')[0])
         target_idx = target_line - 1
 
-        new_name = 'mungus'
+        new_name = get_random_word()
 
-        typename, value = random.choice([
-            ('int', '123'),
-            ('char', '\'a\''),
-            ('char *', '"hello"'),
-        ])
+        typename, value = get_random_typename_value()
 
         indent = self.old_lines[target_idx][:-len(self.old_lines[target_idx].lstrip())]
         self.old_lines.insert(target_idx, f'{indent}{typename} {new_name} = {value};\n')

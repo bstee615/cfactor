@@ -14,6 +14,7 @@ class TransformationProject:
         self.exclude = exclude
 
         self.project, self.c_filename = project, c_filename
+        self.original_project, self.original_c_filename = self.project, self.c_filename
 
         self.keep_tmp = keep_tmp
         self.avoid = avoid
@@ -27,13 +28,12 @@ class TransformationProject:
         tmp_c_filename = tmp_project / os.path.relpath(self.c_filename, self.project)
         shutil.copy(self.c_filename, tmp_c_filename)
 
-        self.original_project, self.original_c_filename = self.project, self.c_filename
         self.project = tmp_project
         self.c_filename = tmp_c_filename
         
-        self.transform_filename = self.c_filename.parent / (self.c_filename.stem + '.transforms.txt')
-        if self.transform_filename.exists():
-            self.transform_filename.unlink()
+        #self.transform_filename = self.c_filename.parent / (self.c_filename.stem + '.transforms.txt')
+        #if self.transform_filename.exists():
+        #    self.transform_filename.unlink()
         
         self.transformations_applied = []
         
@@ -43,21 +43,23 @@ class TransformationProject:
         if not self.keep_tmp:
             shutil.rmtree(self.tmp_dir)
 
-    def log_transforms_applied(self, t):
-        """Log after each transform, for debugging in case the procedure is errored."""
-        with open(self.transform_filename, 'a') as f:
-            f.write(f'{t.__name__}\n')
+    #def log_transforms_applied(self, t):
+    #    """Log after each transform, for debugging in case the procedure is errored."""
+    #    with open(self.transform_filename, 'a') as f:
+    #        f.write(f'{t.__name__}\n')
 
     def log(self, *args):
-        print(*args)
+        with open('app.log', 'a') as f:
+            print(self.original_c_filename.name + ':', *args, file=f)
 
     def log_error(self, *args):
         with open('errors.log', 'a') as f:
-            print(*args, file=f)
+            print(self.original_c_filename.name + ':', *args, file=f)
 
     def apply(self, t):
         try:
-            new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir, avoid_lines=self.avoid).run()
+            #new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.tmp_dir, avoid_lines=self.avoid).run()
+            new_lines = t(self.c_filename, picker=self.picker, project=self.project, exclude=self.exclude, tmp_dir=self.project.parent, avoid_lines=self.avoid).run()
 
             # If it could not be applied, skip this transformation.
             # Most commonly means the transformation had no slot.
@@ -67,17 +69,16 @@ class TransformationProject:
                 return
 
             # Successfully applied the transformation.
-            self.log_transforms_applied(t)
+            #self.log_transforms_applied(t)
             with open(self.c_filename, 'w') as f:
                 f.writelines(new_lines)
-            shutil.copy2(self.c_filename, self.c_filename.with_suffix(f'.c.{len(self.transformations_applied)}.{t.__name__}'))
+            #shutil.copy2(self.c_filename, self.c_filename.with_suffix(f'.c.{len(self.transformations_applied)}.{t.__name__}'))
             self.transforms.remove(t)
             self.transformations_applied.append(t)
             self.log('Applied', t.__name__)
         except Exception as e:
             self.log(f'Error applying {t.__name__}: {e}. Stack trace written to errors.log.')
-            self.log_error(f'***Exception {self.project} {self.original_project} {self.original_c_filename} {t.__name__} ({datetime.datetime.now()})***', e)
-            self.log_error(traceback.format_exc())
+            self.log_error(f'***Exception {self.project} {self.original_project} {self.original_c_filename} {t.__name__} ({datetime.datetime.now()})***', e, '\n', traceback.format_exc())
             self.transforms.remove(t)
 
     def apply_all(self, return_applied=False):
@@ -86,7 +87,7 @@ class TransformationProject:
         self.transformations_applied = []
 
         # Apply all transforms one at a time
-        shutil.copy2(self.c_filename, self.tmp_dir / (self.c_filename.name + '.back'))
+        #shutil.copy2(self.c_filename, self.tmp_dir / (self.c_filename.name + '.back'))
         while len(self.transforms) > 0:
             if len(self.transforms) == 0:
                 self.log('Quitting early, ran out of transforms')

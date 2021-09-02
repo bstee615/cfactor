@@ -1,16 +1,36 @@
+import shutil
 from pathlib import Path
 from refactorings.bad_node_exception import BadNodeException
-import srcml
 import refactorings
 from refactorings.joern import JoernInfo
+import srcml
 import difflib
 import copy
+import random
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+# https://stackoverflow.com/a/30007726
+class PrefixedLoggerAdapter(logging.LoggerAdapter):
+    def __init__(self, prefix, logger):
+        super(PrefixedLoggerAdapter, self).__init__(logger, {})
+        self.prefix = prefix
+
+    def process(self, msg, kwargs):
+        return '[%s] %s' % (self.prefix, msg), kwargs
 
 
 class BaseTransformation:
     def __init__(self, c_file, **kwargs):
         # Load target source file
         self.c_file = Path(c_file)
+        project = Path(kwargs.get("project", self.c_file.parent))
+        prefix = f'{project}:{self.c_file}'
+        self.logger = PrefixedLoggerAdapter(prefix, logger)
+
         with open(self.c_file) as f:
             self.old_lines = f.readlines()
         # If file has CRLF line endings, then it will screw with Python's counting the file offsets.
@@ -18,27 +38,33 @@ class BaseTransformation:
             self.old_text = f.read()
         if '\r' in self.old_text:
             raise Exception(f'{c_file} is CRLF')
+            
+        self.rng = random.Random(0)
         
         self.picker = kwargs.get("picker", refactorings.first_picker)
-        self.avoid_lineno = set(kwargs.get("avoid_lines", set()))
+        if "avoid_lines" in kwargs:
+            self.avoid_lineno = kwargs.get("avoid_lines")
+        else:
+            self.avoid_lineno = set()
 
         try:
-            project = Path(kwargs.get("project", self.c_file.parent))
             exclude_files = kwargs.get("exclude", None)
-            tmp_dir = Path(kwargs.get("tmp_dir", '/tmp'))
-            self.joern = JoernInfo(self.c_file, project, exclude_files, tmp_dir)
-        except Exception:
+            self.joern = JoernInfo(self.c_file, project, exclude_files)
+        except Exception as e:
             self.joern = None
+            self.logger.exception(e)
+
         try:
             self.srcml_root = srcml.get_xml_from_file(self.c_file)
-        except Exception:
+        except Exception as e:
             self.srcml_root = None
+            self.logger.exception(e)
 
     def run(self):
         all_targets = self.get_targets()
         new_lines = None
         while len(all_targets) > 0:
-            target = self.picker(all_targets)
+            target = self.picker(all_targets, rng=self.rng)
             old_srcml_root, old_joern = copy.deepcopy(self.srcml_root), copy.deepcopy(self.joern)
             try:
                 new_lines = self.apply(target)
@@ -47,12 +73,11 @@ class BaseTransformation:
                 all_targets.remove(target)
                 self.srcml_root = old_srcml_root
                 self.joern = old_joern
-                with open('errors.log', 'a') as f:
-                    print(f'BadNodeException: {e}', file=f)
+                self.logger.exception(e, f'({target.__type__.__name__}) {e.__type__.__name__}')
                 continue
             if new_lines is None:
                 return None
-            elif len(self.avoid_lineno) == 0:
+            elif self.avoid_lineno is None or len(self.avoid_lineno) == 0:
                 return new_lines
             else:
                 # Check if the off-limits lines are changed.

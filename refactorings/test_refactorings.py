@@ -1,8 +1,8 @@
-from refactorings import *
-
-from pathlib import Path
 import difflib
-import pytest
+from pathlib import Path
+
+from refactorings import *
+import datetime
 
 
 def count_diff(old_lines, new_lines):
@@ -17,11 +17,56 @@ def count_diff(old_lines, new_lines):
             minus += 1
     return plus, minus
 
+def diff_lines(old_lines, new_lines):
+    """Print the diff between two sets of lines"""
+    return list(difflib.unified_diff(old_lines, new_lines))
 
 def print_diff(old_lines, new_lines):
-    """Print the diff between two sets of lines"""
-    print(''.join(difflib.unified_diff(old_lines, new_lines)))
+    print(''.join(diff_lines(old_lines, new_lines)))
 
+
+import pytest
+
+@pytest.mark.parametrize("input_file,expected", [
+    ('tests/unit/loop_exchange.c', (3, 1)),
+    ('tests/unit/loop_exchange_no_init.c', (2, 1)),
+    ('tests/unit/loop_exchange_no_cond.c', (3, 1)),
+    ('tests/unit/loop_exchange_no_post.c', (2, 1)),
+    ('tests/unit/loop_exchange_empty.c', (1, 1)),
+])
+def test_loop_exchange(input_file, expected):
+    c_file = Path(input_file)
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = LoopExchange(c_file).run()
+    assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+
+@pytest.mark.parametrize("c_file", [
+    'tests/acceptance/loop_exchange/chrome_debian/18159_0.c',  # Unexpected loop subtree structure
+    'tests/acceptance/loop_exchange/chrome_debian/4201_0.c',  # Node 178 should have type Condition but has type ForInit
+    'tests/acceptance/loop_exchange/chrome_debian/5919_0.c',# Loop does not qualify because its last statement has insufficient location info
+])
+def test_loop_exchange_acceptance(c_file):
+    c_file = Path(c_file)
+    diff_file = c_file.with_suffix('.patch')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    new_lines = LoopExchange(c_file).run()
+    diff_out = diff_lines(old_lines, new_lines)
+    with open(diff_file) as f:
+        diff_exp = f.readlines()
+        failed_file = diff_file.with_suffix(f'.fail_{datetime.datetime.now().strftime("%m-%d-%y_%H-%M-%S")}.patch')
+        try:
+            assert [l.strip() for l in diff_exp] == [l.strip() for l in diff_out]
+        except AssertionError:
+            print(f'Printing expected -> output failed diff to {failed_file}.')
+            with open(failed_file, 'w') as f:
+                f.writelines(diff_out)
+            raise
+
+"""
+Old tests
+"""
 
 def test_permute_stmt():
     c_file = Path('tests/testbed/testbed.c')
@@ -88,12 +133,12 @@ def test_switch_exchange_avoid():
     new_lines3 = SwitchExchange(c_file, avoid_lines=[42]).run()
     assert new_lines3 is None  # Should only be one opportunity for switch exchange, which is excluded
 
-
 def test_loop_exchange():
     c_file = Path('tests/testbed/testbed.c')
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = LoopExchange(c_file, picker=lambda x: x[0]).run()
+    print_diff(old_lines, new_lines)
     assert count_diff(old_lines, new_lines) == (3, 1)
     new_lines = LoopExchange(c_file, picker=lambda x: x[1]).run()
     assert count_diff(old_lines, new_lines) == (3, 1)
