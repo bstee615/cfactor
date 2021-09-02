@@ -39,3 +39,5 @@ debug = False
 if debug:
     print(f'Loaded ({[r.__name__ for r in all_refactorings]})', file=sys.stderr)
     print(f'Loaded {TransformationsFactory.__name__}', file=sys.stderr)
+
+from project import TransformationsFactory
