@@ -15,26 +15,6 @@ from refactorings.rename_variable import RenameVariable
 from refactorings.permute_stmt import PermuteStmt
 from refactorings.switch_exchange import SwitchExchange
 from refactorings.loop_exchange import LoopExchange
-import sys
-
-all_refactorings = [
-    RenameVariable,
-    SwitchExchange,
-    LoopExchange,
-    PermuteStmt,
-    InsertNoop,
-]
-
-def random_picker(targets, **kwargs):
-    rng = kwargs.get("rng")
-    assert len(targets) > 0, 'Collection is empty'
-    return rng.choice(targets)
-
-def first_picker(targets, **kwargs):
-    assert len(targets) > 0, 'Collection is empty'
-    return targets[0]
-
-debug = False
-if debug:
-    print(f'Loaded ({[r.__name__ for r in all_refactorings]})', file=sys.stderr)
+from refactorings.defaults import first_picker, random_picker
+from refactorings.project import TransformationProject, all_refactorings
 

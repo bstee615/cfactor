@@ -5,7 +5,7 @@ import copy
 from refactorings.bad_node_exception import BadNodeException
 
 # from refactorings import clang_format
-from refactorings.base import BaseTransformation, JoernTransformation, SrcMLTransformation
+from refactorings.base import BaseTransformation, SrcMLTransformation
 from refactorings.joern import JoernLocation
 import logging
 import re

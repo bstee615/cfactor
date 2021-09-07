@@ -2,8 +2,8 @@ import abc
 import shutil
 from pathlib import Path
 from refactorings.bad_node_exception import BadNodeException
-import refactorings
 from refactorings.joern import JoernInfo
+from refactorings.defaults import first_picker
 import difflib
 import copy
 import random
@@ -15,38 +15,20 @@ from srcml import SrcMLInfo
 logger = logging.getLogger(__name__)
 
 
-# https://stackoverflow.com/a/30007726
-class PrefixedLoggerAdapter(logging.LoggerAdapter):
-    def __init__(self, prefix, logger):
-        super(PrefixedLoggerAdapter, self).__init__(logger, {})
-        self.prefix = prefix
-
-    def process(self, msg, kwargs):
-        return '[%s] %s' % (self.prefix, msg), kwargs
-
-
 class BaseTransformation(abc.ABC):
     logger = logging.getLogger('BaseTransformation')
 
-    def __init__(self, c_file, **kwargs):
+    def __init__(self, c_file, c_code, picker=first_picker, avoid_lines=None):
         # Load target source file
-        self.c_file = Path(c_file)
-
-        with open(self.c_file) as f:
-            self.old_lines = f.readlines()
-        # If file has CRLF line endings, then it will screw with Python's counting the file offsets.
-        with open(self.c_file, newline='\r\n') as f:
-            self.old_text = f.read()
-        if '\r' in self.old_text:
+        if '\r' in c_code:
             raise Exception(f'CRLF')
             
         self.rng = random.Random(0)
-        
-        self.picker = kwargs.get("picker", refactorings.first_picker)
-        if "avoid_lines" in kwargs:
-            self.avoid_lineno = kwargs.get("avoid_lines")
-        else:
-            self.avoid_lineno = set()
+
+        self.picker = picker
+        if avoid_lines is None:
+            avoid_lines = set()
+        self.avoid_lineno = avoid_lines
 
     @abc.abstractmethod
     def get_targets(self, target):
@@ -123,6 +105,6 @@ class JoernTransformation(BaseTransformation):
 
 
 class SrcMLTransformation(BaseTransformation):
-    def __init__(self, c_file, *args, **kwargs):
-        super().__init__(c_file, *args, **kwargs)
-        self.srcml = SrcMLInfo(self.old_text)
+    def __init__(self, c_file, c_code, *args, **kwargs):
+        super().__init__(c_file, c_code, *args, **kwargs)
+        self.srcml = SrcMLInfo(c_code)

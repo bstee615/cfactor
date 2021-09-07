@@ -5,7 +5,7 @@ from pathlib import Path
 import networkx as nx
 
 import cpg
-from refactorings.base import BaseTransformation, JoernTransformation, SrcMLTransformation
+from refactorings.base import BaseTransformation, SrcMLTransformation
 
 
 class PermuteStmt(SrcMLTransformation):
