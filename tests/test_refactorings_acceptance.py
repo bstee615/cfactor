@@ -2,19 +2,22 @@ import datetime
 from pathlib import Path
 
 import pytest
+
 from refactorings import *
 from refactorings.project import TransformationProject
-
 from tests.test_utils import test_data_root, diff_lines, print_diff, count_diff
 
 """
 Acceptance tests
 """
 
+
 @pytest.mark.parametrize("c_file", [
     test_data_root / 'acceptance/loop_exchange/chrome_debian/18159_0.c',  # Unexpected loop subtree structure
-    test_data_root / 'acceptance/loop_exchange/chrome_debian/4201_0.c',  # Node 178 should have type Condition but has type ForInit
-    test_data_root / 'acceptance/loop_exchange/chrome_debian/5919_0.c',# Loop does not qualify because its last statement has insufficient location info
+    test_data_root / 'acceptance/loop_exchange/chrome_debian/4201_0.c',
+    # Node 178 should have type Condition but has type ForInit
+    test_data_root / 'acceptance/loop_exchange/chrome_debian/5919_0.c',
+    # Loop does not qualify because its last statement has insufficient location info
 ])
 def test_loop_exchange_acceptance(c_file):
     c_file = Path(c_file)

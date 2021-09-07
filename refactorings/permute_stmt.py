@@ -1,11 +1,7 @@
-
 """Permute Statement: swap 2 independent statements in a basic block."""
 import copy
-from pathlib import Path
-import networkx as nx
 
-import cpg
-from refactorings.base import BaseTransformation, SrcMLTransformation
+from refactorings.base import SrcMLTransformation
 
 
 class PermuteStmt(SrcMLTransformation):
@@ -24,7 +20,8 @@ class PermuteStmt(SrcMLTransformation):
         while len(q) > 0:
             u = q.pop(0)
             # TODO: Handle function calls with ICFG.
-            if self.srcml.tag(u) in ('expr_stmt', 'decl_stmt', 'for', 'do', 'while', 'switch') and len(self.srcml.xp(u, './/src:call')) == 0 and not self.is_permeable(u):
+            if self.srcml.tag(u) in ('expr_stmt', 'decl_stmt', 'for', 'do', 'while', 'switch') and len(
+                    self.srcml.xp(u, './/src:call')) == 0 and not self.is_permeable(u):
                 current_block.append(u)
             elif len(current_block) > 1:
                 blocks.append(current_block)
@@ -32,7 +29,6 @@ class PermuteStmt(SrcMLTransformation):
             for v in u:
                 q.append(v)
         return blocks
-
 
     def independent_stmts(self, basic_block):
         """Return a list of pairs of independent statements in a given basic block"""
@@ -51,7 +47,7 @@ class PermuteStmt(SrcMLTransformation):
         # a --> i, b --> j, c --> k
         for i in range(len(basic_block)):
             a = basic_block[i]
-            for j in range(i+1, len(basic_block)):
+            for j in range(i + 1, len(basic_block)):
                 b = basic_block[j]
 
                 if depends(a, b):
@@ -61,7 +57,7 @@ class PermuteStmt(SrcMLTransformation):
 
                 # check statements in between
                 skip = False
-                for k in range(i+1, j):
+                for k in range(i + 1, j):
                     c = basic_block[k]
                     if depends(c, a):
                         skip = True
@@ -81,7 +77,6 @@ class PermuteStmt(SrcMLTransformation):
         for block in candidate_blocks:
             independent_pairs += self.independent_stmts(block)
         return independent_pairs
-
 
     def _apply(self, target):
         a, b = target

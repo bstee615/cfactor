@@ -1,14 +1,9 @@
-
 # Refactoring: exchange switch with if/else
-from collections import OrderedDict
 import copy
-from refactorings.bad_node_exception import BadNodeException
+import logging
 
 # from refactorings import clang_format
-from refactorings.base import BaseTransformation, SrcMLTransformation
-from refactorings.joern import JoernLocation
-import logging
-import re
+from refactorings.base import SrcMLTransformation
 from srcml import E
 
 
@@ -61,7 +56,7 @@ class SwitchExchange(SrcMLTransformation):
                 labels, stmts = [], []
                 for n in block:
                     if self.srcml.tag(n) == 'default':
-                        assert i == len(blocks)-1, 'fallthrough not supported'
+                        assert i == len(blocks) - 1, 'fallthrough not supported'
                         block_is_default = True
                         labels.append(n)
                     elif self.srcml.tag(n) == 'case':
@@ -97,7 +92,7 @@ class SwitchExchange(SrcMLTransformation):
                     exprs = []
                     for j, n in enumerate(labels):
                         e = n[0]
-                        if j < len(labels)-1:
+                        if j < len(labels) - 1:
                             e.tail = ' '
                         else:
                             e.tail = None
@@ -107,7 +102,7 @@ class SwitchExchange(SrcMLTransformation):
                         if_cond_expr_contents.append(copy.deepcopy(cond_expr))
                         if_cond_expr_contents.append(E.operator('==', ' '))
                         if_cond_expr_contents.append(expr)
-                        if j < len(exprs)-1:
+                        if j < len(exprs) - 1:
                             if_cond_expr_contents.append(E.operator('||', ' '))
                     args.append(E.condition(
                         '(',
@@ -124,7 +119,7 @@ class SwitchExchange(SrcMLTransformation):
                     block_content_text = old_block_content_text + '{' + labels[-1].tail
                 else:
                     block_content_text = old_block_content_text + '{' + old_block_content_text
-                if i == len(blocks)-1:
+                if i == len(blocks) - 1:
                     block_content_tail = '}'
                 else:
                     block_content_tail = '}' + old_block_content_text

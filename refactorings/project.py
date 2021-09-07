@@ -1,10 +1,4 @@
-from pathlib import Path
-import shutil
 import copy
-import traceback
-import datetime
-import tempfile
-import os
 import logging
 
 from refactorings import RenameVariable, SwitchExchange, LoopExchange, PermuteStmt, InsertNoop
@@ -19,6 +13,7 @@ all_refactorings = [
     PermuteStmt,
     InsertNoop,
 ]
+
 
 class TransformationProject:
     logger = logger

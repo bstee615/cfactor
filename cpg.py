@@ -1,17 +1,18 @@
-import os, argparse
-import tempfile
+import argparse
+import logging
+import os
+import shutil
+import subprocess
+from pathlib import Path
 
 import networkx as nx
 import pandas as pd
-import subprocess
-from pathlib import Path
-import shutil
-import logging
 
 logger = logging.getLogger(__name__)
 
 joern_bin = Path(__file__).parent / 'old-joern/joern-parse'
 assert joern_bin.exists(), joern_bin
+
 
 def gather_stmts(nodes):
     statements = []
@@ -19,6 +20,7 @@ def gather_stmts(nodes):
         if node["isCFGNode"] == True and node["type"].endswith('Statement') and node["code"]:
             statements.append(node)
     return statements
+
 
 def list_files(startpath):
     for root, dirs, files in os.walk(startpath):
@@ -49,9 +51,10 @@ def parse(filepath):
         shutil.rmtree(joern_dir)
 
     cpg = nx.MultiDiGraph()
-    nodes_attributes = [{k:v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in nodes_df.iterrows()]
+    nodes_attributes = [{k: v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in
+                        nodes_df.iterrows()]
     for na in nodes_attributes:
-        na.update({"label": f'{na["key"]} ({na["type"]}): {na["code"]}'}) # Graphviz label
+        na.update({"label": f'{na["key"]} ({na["type"]}): {na["code"]}'})  # Graphviz label
 
         # Cover fault in Joern exposed by tests/acceptance/loop_exchange/chrome_debian/18159_0.c
         if na["type"].endswith('Statement'):
@@ -78,6 +81,7 @@ def parse(filepath):
     cpg.add_edges_from(edges)
 
     return cpg
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

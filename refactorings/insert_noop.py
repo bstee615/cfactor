@@ -1,11 +1,13 @@
 """Insert Noop: insert a statement that doesn't affect any other variables."""
 
-from refactorings.base import BaseTransformation, SrcMLTransformation
-from refactorings.random_word import get_random_word, get_random_typename_value
-import string
-from srcml import E
-from lxml import etree
 import logging
+
+from lxml import etree
+
+from refactorings.base import SrcMLTransformation
+from refactorings.random_word import get_random_word, get_random_typename_value
+from srcml import E
+
 logger = logging.getLogger(__name__)
 
 type_to_literaltype = {
@@ -48,7 +50,7 @@ class InsertNoop(SrcMLTransformation):
 
         try:
             target_idx = target.getparent().index(target)
-            target.getparent().insert(target_idx+1, new_decl_stmt)
+            target.getparent().insert(target_idx + 1, new_decl_stmt)
             self.srcml.apply_changes()
         except Exception:
             self.srcml.revert_changes()

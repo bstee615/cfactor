@@ -2,15 +2,16 @@
 Modifying AST with `srcml`. Parses very OK! Can we modify??
 """
 
-from lxml import etree
-from lxml.builder import ElementMaker
+import copy
+import logging
+import os
+import re
 import subprocess
 from pathlib import Path
-import re
-import os
-import copy
 
-import logging
+from lxml import etree
+from lxml.builder import ElementMaker
+
 logger = logging.getLogger(__name__)
 
 srcml_install = Path(__file__).parent / 'srcml'
@@ -22,7 +23,6 @@ if "LD_LIBRARY_PATH" in srcml_env:
     srcml_env["LD_LIBRARY_PATH"] = str(srcml_install / 'lib') + ':' + srcml_env["LD_LIBRARY_PATH"]
 else:
     srcml_env["LD_LIBRARY_PATH"] = str(srcml_install / 'lib')
-
 
 namespaces = {'src': 'http://www.srcML.org/srcML/src'}
 E = ElementMaker(namespace=namespaces["src"], nsmap=namespaces)

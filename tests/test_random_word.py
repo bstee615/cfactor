@@ -1,5 +1,7 @@
-from refactorings.random_word import get_random_word, get_random_typename_value
 import re
+
+from refactorings.random_word import get_random_word, get_random_typename_value
+
 
 def test_get_random_word():
     words = set()
@@ -8,6 +10,7 @@ def test_get_random_word():
         words.add(w)
         assert all(c in '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM' for c in w), w
     assert len(words) > 990  # 0.1% collision rate
+
 
 def test_get_random_typename_value():
     words = set()
