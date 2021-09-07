@@ -7,7 +7,7 @@
 - for ( ;
 - ;
 - ) {
-+ while (true)
++ while( 1)
 + {
   int32_t c1 = ( uint8_t ) * s1 ++ ;
   int32_t c2 = ( uint8_t ) * s2 ++ ;

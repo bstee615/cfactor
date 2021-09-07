@@ -8,18 +8,19 @@ from tests.test_utils import test_data_root, print_diff, count_diff
 
 
 @pytest.mark.parametrize("input_file,expected", [
-    (test_data_root/'unit/loop_exchange.c', (3, 1)),
-    (test_data_root/'unit/loop_exchange_no_init.c', (2, 1)),
-    (test_data_root/'unit/loop_exchange_no_cond.c', (3, 1)),
-    (test_data_root/'unit/loop_exchange_no_post.c', (2, 1)),
-    (test_data_root/'unit/loop_exchange_empty.c', (1, 1)),
+    (test_data_root/'unit/loop_exchange.c', (4, 2)),
+    (test_data_root/'unit/loop_exchange_no_init.c', (3, 2)),
+    (test_data_root/'unit/loop_exchange_no_cond.c', (4, 2)),
+    (test_data_root/'unit/loop_exchange_no_post.c', (3, 2)),
+    (test_data_root/'unit/loop_exchange_empty.c', (2, 2)),
 ])
 def test_loop_exchange_unit(input_file, expected):
     c_file = Path(input_file)
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = LoopExchange(c_file).run()
-    assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+    print_diff(old_lines, new_lines)
+    assert count_diff(old_lines, new_lines) == expected
 
 @pytest.mark.parametrize("input_file,expected", [
     (test_data_root/'unit/switch_exchange.c', (8, 8)),

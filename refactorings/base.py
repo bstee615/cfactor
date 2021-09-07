@@ -68,7 +68,6 @@ class BaseTransformation(abc.ABC):
         try:
             return self._apply(target)
         except (NotImplementedError, AssertionError) as e:
-            self.handle_exception(e)
             raise BadNodeException(*e.args)
 
     @classmethod
@@ -85,7 +84,6 @@ class BaseTransformation(abc.ABC):
             except BadNodeException as e:
                 new_lines = None
                 all_targets.remove(target)
-                self.logger.info(f'Bad node target={self.joern.node_type[target]} at {self.c_file}{self.joern.node_location[target]}: {e}')
                 continue
             if new_lines is None:
                 return None
@@ -112,6 +110,16 @@ class JoernTransformation(BaseTransformation):
     def __init__(self, c_file, *args, **kwargs):
         super().__init__(c_file, *args, **kwargs)
         self.joern = JoernInfo(c_file)
+
+    def run_target(self, target):
+        try:
+            super().run_target(target)
+        except BadNodeException as e:
+            self.logger.exception(
+                f'Bad node target={self.joern.node_type[target]} at {self.c_file}{self.joern.node_location[target]}',
+                exc_info=e
+            )
+            raise e
 
 
 class SrcMLTransformation(BaseTransformation):

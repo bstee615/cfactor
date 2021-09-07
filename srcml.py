@@ -25,7 +25,7 @@ else:
 
 
 namespaces = {'src': 'http://www.srcML.org/srcML/src'}
-E = ElementMaker(nsmap=namespaces)
+E = ElementMaker(namespace=namespaces["src"], nsmap=namespaces)
 
 
 # Print XML from root
@@ -84,7 +84,7 @@ class SrcMLInfo:
         return self.c_code
 
     def revert_changes(self):
-        self.xml_root = etree.fromstring(self.xml_root)
+        self.xml_root = etree.fromstring(self.xml)
 
     def apply_changes(self):
         self.xml = etree.tostring(self.xml_root)
