@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from refactorings import *
+from refactorings.project import TransformationProject
 
 from tests.test_utils import test_data_root, diff_lines, print_diff, count_diff
 
@@ -36,8 +37,7 @@ def test_loop_exchange_acceptance(c_file):
 
 def test_project():
     c_file = Path(test_data_root / 'testbed/testbed.c')
-    factory = TransformationsFactory(transforms=all_refactorings, picker=first_picker)
-    with factory.make_project(c_file) as project:
+    with TransformationProject(c_file, transforms=all_refactorings, picker=first_picker) as project:
         new_filename = project.apply_all()
         with open(c_file) as f:
             old_lines = f.readlines()
@@ -49,6 +49,5 @@ def test_project():
 
 def test_crlf():
     c_file = Path(test_data_root / 'crlf/crlf.c')
-    factory = TransformationsFactory(transforms=all_refactorings, picker=first_picker)
     with pytest.raises(Exception, match='.* is CRLF'):
-        new_lines = PermuteStmt(c_file).run()
+        PermuteStmt(c_file).run()

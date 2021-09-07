@@ -28,3 +28,6 @@ slurm-*.out
 new_functions.pkl.shard*
 *.out
 *.log
+.idea
+srcml
+*.parsed
