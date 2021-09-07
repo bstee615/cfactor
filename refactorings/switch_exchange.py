@@ -41,7 +41,7 @@ class SwitchExchange(SrcMLTransformation):
                     block = [c]
             else:
                 block.append(c)
-                if self.srcml.tag(c) in ('break', 'return'):
+                if self.srcml.tag(c) in ('break', 'return', 'continue', 'empty_stmt'):
                     block_ender_ok = True
                 elif self.srcml.tag(c) not in ('comment',):
                     block_ender_ok = False

@@ -26,6 +26,7 @@ def test_loop_exchange_unit(input_file, expected):
     (test_data_root/'unit/switch_exchange.c', (7, 7)),
     (test_data_root/'unit/switch_exchange_empty_block.c', (7, 7)),
     (test_data_root/'unit/switch_exchange_comment.c', (7, 7)),
+    (test_data_root/'unit/switch_exchange_empty_stmt.c', (7, 7)),
     (test_data_root/'unit/switch_exchange_default_not_last.c', 'fallthrough'),
     (test_data_root/'unit/switch_exchange_fallthrough.c', 'expected tag to end block'),
     (test_data_root/'unit/switch_exchange_empty.c', 'empty switch statement'),
