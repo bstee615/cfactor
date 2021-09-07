@@ -1,7 +1,7 @@
 
 """Rename Variable: replace a local variable's name."""
 
-from refactorings.base import JoernTransformation
+from refactorings.base_joern import JoernTransformation
 from refactorings.random_word import get_random_word
 import networkx.algorithms.dag as nx_algo
 

@@ -1,7 +1,8 @@
 """Loop exchange: exchange for loop with while"""
 
 from refactorings.bad_node_exception import BadNodeException
-from refactorings.base import BaseTransformation, JoernTransformation
+from refactorings.base import BaseTransformation
+from refactorings.base_joern import JoernTransformation
 from refactorings.joern import JoernLocation
 import re
 
