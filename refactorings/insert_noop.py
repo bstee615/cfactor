@@ -1,30 +1,58 @@
 """Insert Noop: insert a statement that doesn't affect any other variables."""
 
-from refactorings.base import BaseTransformation, JoernTransformation
+from refactorings.base import BaseTransformation, JoernTransformation, SrcMLTransformation
 from refactorings.random_word import get_random_word, get_random_typename_value
 import string
+from srcml import E
+from lxml import etree
+import logging
+logger = logging.getLogger(__name__)
 
-class InsertNoop(JoernTransformation):
-    def get_targets(self):
-        def is_target(n):
-            is_valid_stmt = self.joern.node_type[n] in ('ExpressionStatement', 'IfStatement', 'ElseStatement', 'ForStatement', 'WhileStatement')
-            has_valid_location = self.joern.node_location[n] is not None
-            pred = list(self.joern.ast.predecessors(n))
-            if len(pred) > 0:
-                parent_is_compound = self.joern.node_type[pred[0]] == 'CompoundStatement'
-            else:
-                parent_is_compound = False
-            return is_valid_stmt and parent_is_compound and has_valid_location
-        return [self.joern.node_location[n] for n in filter(is_target, self.joern.ast.nodes)]
+type_to_literaltype = {
+    "int": 'number',
+    "char": 'char',
+    "char *": 'string',
+}
+tagnames = ['expr_stmt', 'decl_stmt', 'for', 'do', 'while', 'if_stmt', 'switch', 'label']
+
+
+class InsertNoop(SrcMLTransformation):
+    def get_targets(self, **kwargs):
+        targets = []
+        for tagname in tagnames:
+            targets += self.srcml.xp(f'//src:{tagname}')
+        return targets
 
     def _apply(self, target):
-        target_line = int(target.line)
-        target_idx = target_line - 1
-
         new_name = get_random_word()
 
         typename, value = get_random_typename_value()
+        literaltype = type_to_literaltype[typename]
+        new_decl_stmt = E.decl_stmt(
+            E.decl(
+                E.type(
+                    E.name(typename, ' '),
+                    E.name(new_name, ' '),
+                    E.init(
+                        '= ',
+                        E.expr(
+                            E.literal(value, {"type": literaltype})
+                        )
+                    ),
+                ),
+                ';'
+            ),
+            target.tail
+        )
+        logger.debug(etree.tostring(new_decl_stmt))
 
-        indent = self.old_lines[target_idx][:-len(self.old_lines[target_idx].lstrip())]
-        self.old_lines.insert(target_idx, f'{indent}{typename} {new_name} = {value};\n')
-        return self.old_lines
+        try:
+            target_idx = target.getparent().index(target)
+            target.getparent().insert(target_idx+1, new_decl_stmt)
+            self.srcml.apply_changes()
+        except Exception:
+            self.srcml.revert_changes()
+            raise
+
+        new_text = self.srcml.load_c_code()
+        return new_text.splitlines(keepends=True)

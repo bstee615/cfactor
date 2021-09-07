@@ -25,7 +25,7 @@ else:
 
 
 namespaces = {'src': 'http://www.srcML.org/srcML/src'}
-E = ElementMaker(namespace="http://www.srcML.org/srcML/src")
+E = ElementMaker(nsmap=namespaces)
 
 
 # Print XML from root

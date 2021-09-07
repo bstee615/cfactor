@@ -101,6 +101,11 @@ def test_avoid():
     assert count_diff(old_lines, new_lines) == (7, 7)
 
 
+def test_insert_noop_targetcount():
+    c_file = Path(test_data_root/'testbed/testbed.c')
+    assert len(InsertNoop(c_file).get_targets()) == 32
+
+
 def test_insert_noop():
     c_file = Path(test_data_root/'testbed/testbed.c')
     with open(c_file) as f:
