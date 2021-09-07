@@ -5,13 +5,13 @@ import copy
 from refactorings.bad_node_exception import BadNodeException
 
 # from refactorings import clang_format
-from refactorings.base import BaseTransformation
+from refactorings.base import BaseTransformation, JoernTransformation
 from refactorings.joern import JoernLocation
 import logging
 import re
 
 
-class SwitchExchange(BaseTransformation):
+class SwitchExchange(JoernTransformation):
     logger = logging.getLogger('SwitchExchange')
 
     def get_targets(self):

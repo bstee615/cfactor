@@ -1,10 +1,10 @@
 """Insert Noop: insert a statement that doesn't affect any other variables."""
 
-from refactorings.base import BaseTransformation
+from refactorings.base import BaseTransformation, JoernTransformation
 from refactorings.random_word import get_random_word, get_random_typename_value
 import string
 
-class InsertNoop(BaseTransformation):
+class InsertNoop(JoernTransformation):
     def get_targets(self):
         def is_target(n):
             is_valid_stmt = self.joern.node_type[n] in ('ExpressionStatement', 'IfStatement', 'ElseStatement', 'ForStatement', 'WhileStatement')

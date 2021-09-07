@@ -5,10 +5,10 @@ from pathlib import Path
 import networkx as nx
 
 import cpg
-from refactorings.base import BaseTransformation
+from refactorings.base import BaseTransformation, JoernTransformation
 
 
-class PermuteStmt(BaseTransformation):
+class PermuteStmt(JoernTransformation):
 
     def get_basic_blocks(self):
         """Return a list of all basic blocks, where a block is a list of statements"""

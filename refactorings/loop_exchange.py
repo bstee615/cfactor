@@ -1,12 +1,12 @@
 """Loop exchange: exchange for loop with while"""
 
 from refactorings.bad_node_exception import BadNodeException
-from refactorings.base import BaseTransformation
+from refactorings.base import BaseTransformation, JoernTransformation
 from refactorings.joern import JoernLocation
 import re
 
 
-class LoopExchange(BaseTransformation):
+class LoopExchange(JoernTransformation):
     def get_targets(self):
         return [n for n, d in self.joern.ast.nodes.items() if d["type"] == 'ForStatement']
 

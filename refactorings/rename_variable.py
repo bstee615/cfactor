@@ -1,41 +1,31 @@
 """Rename Variable: replace a local variable's name."""
 
-from refactorings.base import BaseTransformation
+from refactorings.base import BaseTransformation, SrcMLTransformation
 from refactorings.random_word import get_random_word
 import networkx.algorithms.dag as nx_algo
 
-class RenameVariable(BaseTransformation):
+class RenameVariable(SrcMLTransformation):
     def get_targets(self):
-        id_decls = [n for n in self.joern.g.nodes() if self.joern.node_type[n] == 'IdentifierDecl']
-        all_targets = []
-        for d in id_decls:
-            children = list(self.joern.ast.successors(d))
-            if self.joern.node_type[children[0]] == 'IdentifierDeclType' and self.joern.node_type[children[1]] == 'Identifier':
-                all_targets.append(children[1])
-        return all_targets
+        all_names = self.srcml.xp(f'//src:function//src:decl_stmt/src:decl/src:name')
+        return all_names
 
-    def _apply(self, target):
-        old_target_name = self.joern.node_code[target]
+    def _apply(self, var_ref):
+        old_target_name = var_ref.text
         new_target_name = get_random_word()
 
-        function_def = target
-        while self.joern.node_type[function_def] != 'FunctionDef':
-            function_def = next(self.joern.ast.predecessors(function_def))
-        nodes_in_function = nx_algo.descendants(self.joern.ast, function_def)
-        var_refs = [n for n in nodes_in_function
-                    if self.joern.node_type[n] == 'Identifier'
-                    and self.joern.node_code[n] == old_target_name]
-        var_refs = sorted(var_refs, key=lambda n: self.joern.node_location[n].offset)
+        function_name = self.srcml.xp(self.srcml.xp(var_ref, './ancestor::src:function')[0], './src:name')[0].text
+        var_refs = self.srcml.xp(f'//src:name[text() = "{old_target_name}"][ancestor::src:function[./src:name[text() = "{function_name}"]]]')
+        if len(var_refs) == 0:
+            return None
 
-        assert len(var_refs) > 0, f'no references to variable {old_target_name}'
+        try:
+            for var_ref in var_refs:
+                var_ref.text = new_target_name
+            self.srcml.apply_changes()
+        except Exception:
+            self.srcml.revert_changes()
+            raise
+        new_code = self.srcml.load_c_code()
+        return new_code.splitlines(keepends=True)
 
-        new_text = ''
-        last_offset = 0
-        for v in var_refs:
-            loc = self.joern.node_location[v]
-            new_text += self.old_text[last_offset:loc.offset]
-            new_text += new_target_name
-            last_offset = loc.end_offset+1
-        new_text += self.old_text[last_offset:]
 
-        return new_text.splitlines(keepends=True)

@@ -10,7 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-joern_bin = Path('./old-joern/joern-parse')
+joern_bin = Path(__file__).parent / 'old-joern/joern-parse'
 assert joern_bin.exists(), joern_bin
 
 def gather_stmts(nodes):

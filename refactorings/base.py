@@ -10,6 +10,8 @@ import random
 import traceback
 import logging
 
+from srcml import SrcMLInfo
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,8 +48,6 @@ class BaseTransformation(abc.ABC):
         else:
             self.avoid_lineno = set()
 
-        self.joern = JoernInfo(c_file)
-
     @abc.abstractmethod
     def get_targets(self, target):
         """
@@ -68,6 +68,7 @@ class BaseTransformation(abc.ABC):
         try:
             return self._apply(target)
         except (NotImplementedError, AssertionError) as e:
+            self.handle_exception(e)
             raise BadNodeException(*e.args)
 
     @classmethod
@@ -104,4 +105,16 @@ class BaseTransformation(abc.ABC):
                     continue
                 else:
                     return new_lines
-        return new_lines
+        return
+
+
+class JoernTransformation(BaseTransformation):
+    def __init__(self, c_file, *args, **kwargs):
+        super().__init__(c_file, *args, **kwargs)
+        self.joern = JoernInfo(c_file)
+
+
+class SrcMLTransformation(BaseTransformation):
+    def __init__(self, c_file, *args, **kwargs):
+        super().__init__(c_file, *args, **kwargs)
+        self.srcml = SrcMLInfo(self.old_text)
