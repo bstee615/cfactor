@@ -97,3 +97,7 @@ class SrcMLInfo:
             node = args[0]
             query = args[1]
         return node.xpath(query, namespaces=namespaces)
+
+    @classmethod
+    def tag(cls, node):
+        return etree.QName(node).localname
