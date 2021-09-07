@@ -20,14 +20,14 @@ class SwitchExchange(SrcMLTransformation):
 
     def _apply(self, target):
         cond = self.srcml.xp(target, 'src:condition')[0]
-        # case = self.srcml.xp(target, 'src:case')[0]
         block_content = self.srcml.xp(target, 'src:block')[0][0]
 
         children = list(block_content)
         assert len(children) > 0, 'empty switch statement'
 
+        # Get all switch blocks
         block = []
-        block_ender = None  # Last statement in the block
+        block_ender_ok = True  # Last statement in the block
         blocks = []
         while len(children) > 0:
             c = children.pop(0)
@@ -35,31 +35,31 @@ class SwitchExchange(SrcMLTransformation):
                 if len(block) == 0 or all(self.srcml.tag(n) == 'case' for n in block):
                     block.append(c)
                 else:
-                    if block_ender is not None:
-                        # Check that there are no fallthroughs and that last statement is break
-                        assert self.srcml.tag(block_ender) in ('break', 'return'),\
-                            f'expected tag to end block but got {block_ender.tag}'
+                    assert block_ender_ok, f'expected tag to end block'
                     blocks.append(block)
-                    block_ender = None
+                    block_ender_ok = True
                     block = [c]
             else:
                 block.append(c)
-                block_ender = c
+                block_ender_ok = self.srcml.tag(c) in ('break', 'return')
         blocks.append(block)
         self.logger.debug(f'{len(blocks)=}')
 
         try:
+            # Save some nodes
             block_content_text = block_content.text
-            ifs = []
             cond_expr = self.srcml.xp(cond, 'src:expr')[0]
             cond_expr.tail = ' '
+
+            ifs = []
             for i, block in enumerate(blocks):
-                is_default = False
+                # Dissect block
+                block_is_default = False
                 labels, stmts = [], []
                 for n in block:
                     if self.srcml.tag(n) == 'default':
                         assert i == len(blocks)-1, 'fallthrough not supported'
-                        is_default = True
+                        block_is_default = True
                         labels.append(n)
                     elif self.srcml.tag(n) == 'case':
                         labels.append(n)
@@ -67,28 +67,30 @@ class SwitchExchange(SrcMLTransformation):
                         stmts.append(n)
                 self.logger.debug(f'{labels=} {stmts=}')
 
-                stmts[-1].tail = block_content_text
+                # Will be used to build arguments for call to E.if_stmt
+                args = []
 
-                if is_default:
+                # Assemble beginning of conditional statement
+                if block_is_default:
                     if_type = 'else'
                     if_text = 'else'
                 else:
                     if_type = 'if'
                     if_text = 'if'
-                if not is_default and i > 0:
+                if not block_is_default and i > 0:
                     if_attrs = {"type": 'elseif'}
                     if_text = 'else if'
                 else:
                     if_attrs = {}
-                self.logger.debug(f'{if_type=} {if_text=} {if_attrs=}')
-
-                args = [
+                args += [
                     if_type,
                     f'{if_text} ',
                     if_attrs
                 ]
+                self.logger.debug(f'{if_type=} {if_text=} {if_attrs=}')
 
-                if not is_default:
+                # Assemble conditional
+                if not block_is_default:
                     exprs = []
                     for j, n in enumerate(labels):
                         e = n[0]
@@ -111,12 +113,25 @@ class SwitchExchange(SrcMLTransformation):
                             ')'
                         )
                     ))
+                    self.logger.debug(f'conditioning on {len(exprs)} expressions')
 
+                # Assemble block content (statements inside the block)
+                if len(stmts) > 0:
+                    stmts[-1].tail = block_content_text
                 if i == len(blocks)-1:
-                    ender = '}'
+                    block_content_tail = '}'
                 else:
-                    ender = '}' + block_content_text
-                args.append(E.block(E.block_content(block_content_text + '{' + labels[-1].tail, *stmts, ender)))
+                    block_content_tail = '}' + block_content_text
+                args.append(
+                    E.block(
+                        E.block_content(
+                            block_content_text + '{' + labels[-1].tail,
+                            *stmts,
+                            block_content_tail
+                        )
+                    )
+                )
+                self.logger.debug(f'added {len(stmts)} stmts')
 
                 if_part = E(*args)
                 ifs.append(if_part)
