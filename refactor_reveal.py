@@ -16,8 +16,14 @@ import pandas as pd
 import tqdm as tqdm
 
 import refactorings
+from cfactor.refactorings.project import TransformationProject
+from data_processing.create_ggnn_input import get_input
+
+import logging
+logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-i', "--input_dir", help="Input source code files", default='../data/chrome_debian')
 parser.add_argument('--nproc', default='detect')
 parser.add_argument('--mode', default='diag')
 parser.add_argument('--slice', default=None)
@@ -44,33 +50,19 @@ if app_log.exists():
 
 
 def do_one(t):
-    (idx, fn), tmp_dir = t
-    factory = refactorings.TransformationsFactory(refactorings.all_refactorings, refactorings.random_picker)
-    code = fn["code"]
-    tmp_file_dir = tmp_dir / ('tmp_' + fn["file_name"])
-    tmp_file = tmp_file_dir / fn["file_name"]
-    tmp_file.parent.mkdir()
-    with open(tmp_file, 'w') as f:
-        f.write(code)
+    idx, fn = t
     try:
-        project = factory.make_project(tmp_file)
-        new_file, applied = project.apply_all(return_applied=True)
-        with open(new_file) as f:
-            new_fn = f.read()
-        if tmp_file_dir.exists():
-            shutil.rmtree(tmp_file_dir)
-        parsed = tmp_dir / ('parsed_' + fn["file_name"])
-        if parsed.exists():
-            shutil.rmtree(parsed)
-        return idx, new_fn, applied
-        # with factory.make_project(tmp_file) as project:
-        #    new_file, applied = project.apply_all(return_applied=True)
-        #    with open(new_file) as f:
-        #        new_fn = f.read()
-        #        return (idx, new_fn, applied)
-    except Exception:
-        tmp_file.unlink()
-        raise
+        with TransformationProject(refactorings.all_refactorings, refactorings.random_picker,
+                                   fn["file_name"], fn["code"]) as project:
+            new_lines, applied = project.apply_all(return_applied=True)
+            if new_lines is not None:
+                return idx, ''.join(new_lines), applied
+            else:
+                return idx, new_lines, applied
+    except Exception as e:
+        logger.exception('idx %d filename %s had an error', idx, fn["file_name"], exc_info=e)
+    finally:
+        pass
 
 
 def filter_functions(df):
@@ -97,25 +89,17 @@ def get_shards():
 
 
 def main():
-    df = pd.read_json('../4OH4/ReVeal/out/data/chrome_debian_cfg_full_text_files.json')
-
+    json_data = get_input(Path(args.input_dir))
+    if args.test is not None:
+        json_data = itertools.islice(json_data, args.test)
+        logger.info('cutting to %d samples', args.test)
+    df = pd.DataFrame(data=json_data)
     if args.mode == 'gen':
-        print(len(df), 'samples')
+        logger.info('%d samples', len(df))
 
         if args.remainder:
             df = filter_functions(df)
-            print('filtered to remainder of', len(df), 'samples')
-
-        if args.test is not None:
-            df = df.head(args.test)
-            print('cutting to', len(df), 'samples')
-
-        first_row = df.iloc[0]
-        func_lines = first_row["code"].splitlines()
-        print('Example:')
-        print('\n'.join(func_lines[:3]))
-        print('...')
-        print('\n'.join(func_lines[-3:]))
+            logger.info('filtered to remainder of %d samples', len(df))
 
         func_it = df.iterrows()
         if args.slice is not None:
@@ -123,45 +107,33 @@ def main():
             begin, end = int(begin), int(end)
             func_it = itertools.islice(func_it, begin, end)
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            func_it = zip(func_it, tmp_dir)
-            shard_len = args.shard_len
+        shard_len = args.shard_len
 
-            tmp_dir = Path(tmp_dir)
-            print('Working directory:', tmp_dir)
-            print('nproc:', nproc)
+        logger.info('nproc: %d', nproc)
 
-            def save_shard(data):
-                if len(data) > 0 and not args.no_save:
-                    _, new_shard = get_shards()
-                    with open(new_shard, 'wb') as f:
-                        pickle.dump(data, f)
+        def save_shard(data):
+            if len(data) > 0 and not args.no_save:
+                _, new_shard = get_shards()
+                with open(new_shard, 'wb') as f:
+                    pickle.dump(data, f)
 
-            new_functions = []
-            with multiprocessing.Pool(nproc) as p:
-                with tqdm.tqdm(total=len(df)) as pbar:
-                    # For very long iterables using a large value for chunksize can make the job complete
-                    # much faster than using the default value of 1.
-                    for new_func in p.imap_unordered(do_one, func_it, 10):
-                        new_functions.append(new_func)
-                        pbar.update(1)
-                        if len(new_functions) >= shard_len:
-                            save_shard(new_functions)
-                            new_functions = []
-                    save_shard(new_functions)
-
-                #    pbar.update(1)
-                # it = tqdm.tqdm(p.imap(do_one, func_it), total=len(functions))
-                # while True:
-                #    new_functions = list(itertools.islice(it, shard_len))
-                #    if len(new_functions) == 0:
-                #        break
-                #    else:
+        new_functions = []
+        with multiprocessing.Pool(nproc) as p:
+            with tqdm.tqdm(total=len(df)) as pbar:
+                # For very long iterables using a large value for chunksize can make the job complete
+                # much faster than using the default value of 1.
+                for new_func in p.imap_unordered(do_one, func_it, 10):
+                    new_functions.append(new_func)
+                    pbar.update(1)
+                    if len(new_functions) >= shard_len:
+                        save_shard(new_functions)
+                        new_functions = []
+                save_shard(new_functions)
     elif args.mode == 'diag':
 
         new_functions = []
 
-        print(len(new_functions), 'functions total')
+        logger.info('%d functions total', len(new_functions))
 
         functions_idx, functions = zip(*list(df.iterrows()))
 
@@ -175,10 +147,11 @@ def main():
             total_changed += num_changed
             if showed >= 5:
                 continue
-            print('Applied:', [x.__name__ for x in applied])
-            print(''.join(difflib.unified_diff(old_lines, new_lines)))
+            logger.info('Applied: %s', [x.__name__ for x in applied])
+            logger.info(''.join(difflib.unified_diff(old_lines, new_lines)))
             showed += 1
-        print('Average changed lines:', total_changed / len(new_functions))
+        
+        logger.info('Average changed lines: %s', total_changed / len(new_functions if new_functions != 0 else 1))
 
 
 if __name__ == '__main__':

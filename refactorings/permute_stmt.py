@@ -5,10 +5,10 @@ from pathlib import Path
 import networkx as nx
 
 import cpg
-from refactorings.base import BaseTransformation
+from refactorings.base import BaseTransformation, JoernTransformation
 
 
-class PermuteStmt(BaseTransformation):
+class PermuteStmt(JoernTransformation):
 
     def get_basic_blocks(self):
         """Return a list of all basic blocks, where a block is a list of statements"""
@@ -101,8 +101,7 @@ class PermuteStmt(BaseTransformation):
         """Swap 2 lines in a file's text and return the lines in the text"""
         def to_line(loc):
             return loc.line
-        with open(self.c_file) as f:
-            lines = f.readlines()
+        lines = list(self.old_lines)
         a_idx = to_line(self.joern.node_location[a])-1
         b_idx = to_line(self.joern.node_location[b])-1
         lines[a_idx], lines[b_idx] = lines[b_idx], lines[a_idx]

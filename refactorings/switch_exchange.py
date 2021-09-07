@@ -4,115 +4,153 @@ from collections import OrderedDict
 import copy
 from refactorings.bad_node_exception import BadNodeException
 
-from refactorings import clang_format
-from refactorings.base import BaseTransformation
+# from refactorings import clang_format
+from refactorings.base import BaseTransformation, JoernTransformation, SrcMLTransformation
 from refactorings.joern import JoernLocation
 import logging
 import re
+from srcml import E
 
 
-class SwitchExchange(BaseTransformation):
+class SwitchExchange(SrcMLTransformation):
     logger = logging.getLogger('SwitchExchange')
 
-    def get_targets(self):
-        return [n for n, d in self.joern.ast.nodes.items() if d["type"] == 'SwitchStatement']
+    def get_targets(self, **kwargs):
+        return self.srcml.xp('//src:switch')
 
     def _apply(self, target):
+        cond = self.srcml.xp(target, 'src:condition')[0]
+        block_content = self.srcml.xp(target, 'src:block')[0][0]
 
-        # TODO: filter switches by ones with static expression (no function call).
-        cond, compound = self.joern.ast.successors(target)
-        children = sorted(self.joern.ast.successors(compound))
+        children = list(block_content)
+        assert len(children) > 0, 'empty switch statement'
 
-        assert len(children) > 0, f'empty switch statement'
-        stmts_in_compound = list(children)
-
+        # Get all switch blocks
         block = []
-        block_ender = None  # Last statement in the block. TODO: block_ender should be the true last statement to execute in the block, not just the last statement
+        block_ender_ok = True  # Last statement in the block
         blocks = []
         while len(children) > 0:
             c = children.pop(0)
-            if self.joern.node_type[c] == 'Label':
-                if len(block) == 0 or all(self.joern.node_type[n] == 'Label' for n in block):
+            if self.srcml.tag(c) in ('case', 'default'):
+                if len(block) == 0 or all(self.srcml.tag(n) == 'case' for n in block):
                     block.append(c)
                 else:
-                    if block_ender is not None:
-                        # Check that there are no fallthroughs and that last statement is break
-                        assert self.joern.node_type[block_ender] in ('BreakStatement', 'ReturnStatement'),\
-                            f'expected BreakStatement but got {self.joern.node_type[block_ender]}'
+                    assert block_ender_ok, f'expected tag to end block'
                     blocks.append(block)
-                    block_ender = None
-                    block = []
-                    block.append(c)
+                    block_ender_ok = True
+                    block = [c]
             else:
                 block.append(c)
-                block_ender = c
+                if self.srcml.tag(c) in ('break', 'return', 'continue', 'empty_stmt'):
+                    block_ender_ok = True
+                elif self.srcml.tag(c) not in ('comment',):
+                    block_ender_ok = False
         blocks.append(block)
         self.logger.debug(f'{len(blocks)=}')
 
-        # TODO: check no fall-through using CFG
+        try:
+            # Save some nodes
+            old_block_content_text = block_content.text
+            cond_expr = self.srcml.xp(cond, 'src:expr')[0]
+            cond_expr.tail = ' '
 
-        target_location = self.joern.node_location[target]
-        switch_indent = self.get_indent(self.old_lines[target_location.line])
-        # Find the first child that isn't a label and get its indentation.
-        # If there is none, default to the first label.
-        for n in stmts_in_compound:
-            first_body_child = n
-            if self.joern.node_type[n] != 'Label':
-                break
-        first_body_child = self.joern.node_location[first_body_child]
-        body_indent = self.get_indent(self.old_lines[first_body_child.line])
+            ifs = []
+            for i, block in enumerate(blocks):
+                # Dissect block
+                block_is_default = False
+                labels, stmts = [], []
+                for n in block:
+                    if self.srcml.tag(n) == 'default':
+                        assert i == len(blocks)-1, 'fallthrough not supported'
+                        block_is_default = True
+                        labels.append(n)
+                    elif self.srcml.tag(n) == 'case':
+                        labels.append(n)
+                    elif self.srcml.tag(n) != 'break':
+                        stmts.append(n)
+                self.logger.debug(f'{labels=} {stmts=}')
 
-        compound_location = self.joern.node_location[compound]
+                # Will be used to build arguments for call to E.if_stmt
+                args = []
 
-        new_text = self.old_text[:target_location.offset]
-        # Add in new if/elses
-        all_codes = []
-        for i, block in enumerate(blocks):
-            labels, stmts = [], []
-            for n in block:
-                if self.joern.node_type[n] == 'Label':
-                    labels.append(n)
-                elif self.joern.node_type[n] != 'BreakStatement':
-                    stmts.append(n)
-            self.logger.debug(f'{labels=} {stmts=}')
+                # Assemble beginning of conditional statement
+                if block_is_default:
+                    if_type = 'else'
+                    if_text = 'else'
+                else:
+                    if_type = 'if'
+                    if_text = 'if'
+                if not block_is_default and i > 0:
+                    if_attrs = {"type": 'elseif'}
+                    if_text = 'else if'
+                else:
+                    if_attrs = {}
+                args += [
+                    if_type,
+                    f'{if_text} ',
+                    if_attrs
+                ]
+                self.logger.debug(f'{if_type=} {if_text=} {if_attrs=}')
 
-            # If condition
-            def get_if_condition():
-                switch_cond_code = self.joern.node_code[cond]
-                label_exprs = []
-                for n in labels:
-                    label_code = self.joern.node_code[n]
-                    m = re.fullmatch(r'\s*default\s*:', label_code)
-                    if m is not None:
-                        if i != len(blocks)-1:
-                            raise NotImplementedError(f'default in the middle of a switch')
-                        return 'else'
-                    else:
-                        m = re.fullmatch(r'\s*case\s*(.*)\s*:', label_code)
-                        if m is None:
-                            m = re.fullmatch(r'\s*case\s*(.*)\s*:', label_code)
-                            raise BadNodeException(f'Could not parse {label_code} for label')
+                # Assemble conditional
+                if not block_is_default:
+                    exprs = []
+                    for j, n in enumerate(labels):
+                        e = n[0]
+                        if j < len(labels)-1:
+                            e.tail = ' '
                         else:
-                            label_code = m.group(1)
-                            label_exprs.append(label_code.strip())
-                cond_expr_code = ' || '.join((f'{switch_cond_code} == {code}') for code in label_exprs)
-                if_cond_code = f'if ({cond_expr_code})'
-                if i > 0:
-                    if_cond_code = 'else ' + if_cond_code
-                return if_cond_code
-            if_cond_code = get_if_condition()
-            self.logger.debug(f'if_cond_code="{if_cond_code}"')
+                            e.tail = None
+                        exprs.append(e)
+                    if_cond_expr_contents = []
+                    for j, expr in enumerate(exprs):
+                        if_cond_expr_contents.append(copy.deepcopy(cond_expr))
+                        if_cond_expr_contents.append(E.operator('==', ' '))
+                        if_cond_expr_contents.append(expr)
+                        if j < len(exprs)-1:
+                            if_cond_expr_contents.append(E.operator('||', ' '))
+                    args.append(E.condition(
+                        '(',
+                        E.expr(
+                            *if_cond_expr_contents,
+                            ')'
+                        )
+                    ))
+                    self.logger.debug(f'conditioning on {len(exprs)} expressions')
 
-            # Wrap code statements in {}
-            stmts_code = ('\n' + body_indent).join(self.joern.node_code[stmt] for stmt in stmts)
-            stmts_code = switch_indent + '{\n' + body_indent + stmts_code + '\n' + switch_indent + '}'
-            self.logger.debug(f'stmts_code="{stmts_code}"')
+                # Assemble block content (statements inside the block)
+                if len(stmts) > 0:
+                    stmts[-1].tail = old_block_content_text
+                    block_content_text = old_block_content_text + '{' + labels[-1].tail
+                else:
+                    block_content_text = old_block_content_text + '{' + old_block_content_text
+                if i == len(blocks)-1:
+                    block_content_tail = '}'
+                else:
+                    block_content_tail = '}' + old_block_content_text
+                args.append(
+                    E.block(
+                        E.block_content(
+                            block_content_text,
+                            *stmts,
+                            block_content_tail
+                        )
+                    )
+                )
+                self.logger.debug(f'added {len(stmts)} stmts')
 
-            all_code = if_cond_code + '\n' + stmts_code
-            self.logger.debug(f'all_code="{all_code}"')
-            all_codes.append(all_code)
-        new_text += ('\n' + switch_indent).join(all_codes)
-        new_text += self.old_text[compound_location.end_offset+1:]
+                if_part = E(*args)
+                ifs.append(if_part)
+            if_stmt = E.if_stmt(*ifs)
+            if_stmt.tail = target.tail
+            parent = target.getparent()
+            insert_idx = parent.index(target)
+            parent.remove(target)
+            parent.insert(insert_idx, if_stmt)
+            self.srcml.apply_changes()
+        except Exception:
+            self.srcml.revert_changes()
+            raise
 
-        new_lines = new_text.splitlines(keepends=True)
-        return new_lines
+        new_text = self.srcml.load_c_code()
+        return new_text.splitlines(keepends=True)

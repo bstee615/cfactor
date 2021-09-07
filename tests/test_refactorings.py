@@ -8,23 +8,27 @@ from tests.test_utils import test_data_root, print_diff, count_diff
 
 
 @pytest.mark.parametrize("input_file,expected", [
-    (test_data_root/'unit/loop_exchange.c', (3, 1)),
-    (test_data_root/'unit/loop_exchange_no_init.c', (2, 1)),
-    (test_data_root/'unit/loop_exchange_no_cond.c', (3, 1)),
-    (test_data_root/'unit/loop_exchange_no_post.c', (2, 1)),
-    (test_data_root/'unit/loop_exchange_empty.c', (1, 1)),
+    (test_data_root/'unit/loop_exchange.c', (4, 2)),
+    (test_data_root/'unit/loop_exchange_no_init.c', (3, 2)),
+    (test_data_root/'unit/loop_exchange_no_cond.c', (4, 2)),
+    (test_data_root/'unit/loop_exchange_no_post.c', (3, 2)),
+    (test_data_root/'unit/loop_exchange_empty.c', (2, 2)),
 ])
 def test_loop_exchange_unit(input_file, expected):
     c_file = Path(input_file)
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = LoopExchange(c_file).run()
-    assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+    print_diff(old_lines, new_lines)
+    assert count_diff(old_lines, new_lines) == expected
 
 @pytest.mark.parametrize("input_file,expected", [
-    (test_data_root/'unit/switch_exchange.c', (8, 8)),
-    (test_data_root/'unit/switch_exchange_default_not_last.c', 'default in the middle of a switch'),
-    (test_data_root/'unit/switch_exchange_fallthrough.c', 'expected BreakStatement but got ExpressionStatement'),
+    (test_data_root/'unit/switch_exchange.c', (7, 7)),
+    (test_data_root/'unit/switch_exchange_empty_block.c', (7, 7)),
+    (test_data_root/'unit/switch_exchange_comment.c', (7, 7)),
+    (test_data_root/'unit/switch_exchange_empty_stmt.c', (7, 7)),
+    (test_data_root/'unit/switch_exchange_default_not_last.c', 'fallthrough'),
+    (test_data_root/'unit/switch_exchange_fallthrough.c', 'expected tag to end block'),
     (test_data_root/'unit/switch_exchange_empty.c', 'empty switch statement'),
 ])
 def test_switch_exchange(input_file, expected):
@@ -40,7 +44,8 @@ def test_switch_exchange(input_file, expected):
             r.run_target(target)
     else:
         new_lines = r.run_target(target)
-        assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+        print_diff(old_lines, new_lines)
+        assert count_diff(old_lines, new_lines) == expected
 
 """
 Old tests
@@ -69,6 +74,11 @@ def test_avoid():
         old_lines = f.readlines()
     new_lines = RenameVariable(c_file, avoid_lines=[57]).run()
     assert count_diff(old_lines, new_lines) == (7, 7)
+
+
+def test_insert_noop_targetcount():
+    c_file = Path(test_data_root/'testbed/testbed.c')
+    assert len(InsertNoop(c_file).get_targets()) == 32
 
 
 def test_insert_noop():

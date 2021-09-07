@@ -7,8 +7,8 @@
 - for ( p = g_list_first ( actions ) ;
 - p ;
 - p = p -> next ) {
-+ p = g_list_first ( actions );
-+ while (p)
++ p = g_list_first ( actions ) ;
++ while( p )
 + {
   if ( ( ( PurplePluginAction * ) p -> data ) && purple_menu_cmp ( ( ( PurplePluginAction * ) p -> data ) -> label , "Upload buddylist to Server" ) == 0 ) {
   PurplePluginAction action ;

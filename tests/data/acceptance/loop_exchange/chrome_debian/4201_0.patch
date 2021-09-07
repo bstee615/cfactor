@@ -7,8 +7,8 @@
 - for ( p = * env_free ;
 - * p != 0 ;
 - ) {
-+ p = * env_free;
-+ while (* p != 0)
++ p = * env_free ;
++ while( * p != 0)
 + {
   if ( * p ++ == ' ' ) {
   n ++ ;

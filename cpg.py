@@ -10,7 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-joern_bin = Path('./old-joern/joern-parse')
+joern_bin = Path(__file__).parent / 'old-joern/joern-parse'
 assert joern_bin.exists(), joern_bin
 
 def gather_stmts(nodes):
@@ -29,26 +29,24 @@ def list_files(startpath):
         for f in files:
             logger.debug('{}{}'.format(subindent, f))
 
-def parse(project_dir, filepath, exclude, copy_out=False):
-    dst_filepath = filepath
 
+def parse(filepath):
     # Invoke joern
-    with tempfile.TemporaryDirectory() as joern_parse_dir:
-        joern_parse_dir = Path(joern_parse_dir) / 'parsed'
-        if copy_out:
-            joern_parse_dir.mkdir('tmp')
-            shutil.copy2(filepath, joern_parse_dir)
-        cmd = f'bash {joern_bin} {filepath.parent.absolute()} -outdir {joern_parse_dir.absolute()}'
+    joern_dir = filepath.parent.with_suffix('.parsed')
+    try:
+        cmd = f'bash {joern_bin} {filepath.parent.absolute()} -outdir {joern_dir.absolute()}'
         proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if proc.returncode != 0:
             logger.error(proc.stdout.decode())
 
-        output_path = joern_parse_dir / str(dst_filepath.absolute())[1:]
-        assert output_path.exists()
+        output_path = joern_dir / str(filepath.absolute())[1:]
+        assert output_path.exists(), output_path
         nodes_path = output_path / 'nodes.csv'
         edges_path = output_path / 'edges.csv'
         nodes_df = pd.read_csv(nodes_path, sep='\t')
         edges_df = pd.read_csv(edges_path, sep='\t')
+    finally:
+        shutil.rmtree(joern_dir)
 
     cpg = nx.MultiDiGraph()
     nodes_attributes = [{k:v if not pd.isnull(v) else '' for k, v in dict(row).items()} for i, row in nodes_df.iterrows()]

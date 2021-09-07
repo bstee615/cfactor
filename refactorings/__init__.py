@@ -15,7 +15,6 @@ from refactorings.rename_variable import RenameVariable
 from refactorings.permute_stmt import PermuteStmt
 from refactorings.switch_exchange import SwitchExchange
 from refactorings.loop_exchange import LoopExchange
-from refactorings.project import TransformationsFactory
 import sys
 
 all_refactorings = [
@@ -38,6 +37,4 @@ def first_picker(targets, **kwargs):
 debug = False
 if debug:
     print(f'Loaded ({[r.__name__ for r in all_refactorings]})', file=sys.stderr)
-    print(f'Loaded {TransformationsFactory.__name__}', file=sys.stderr)
 
-from .project import TransformationsFactory
