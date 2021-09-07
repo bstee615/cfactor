@@ -27,5 +27,3 @@ class RenameVariable(SrcMLTransformation):
             raise
         new_code = self.srcml.load_c_code()
         return new_code.splitlines(keepends=True)
-
-

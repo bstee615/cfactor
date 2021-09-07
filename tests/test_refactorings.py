@@ -62,6 +62,36 @@ def test_rename_variable():
     assert count_diff(old_lines, new_lines) == (5, 5)
 
 
+def test_joern_vs_srcml():
+    c_file = Path(test_data_root / 'timing/variables.c')
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    import time
+    from refactorings.rename_variable_joern import RenameVariableJoernVersion
+
+    n_trials = 25
+
+    srcml_times = []
+    for i in range(n_trials):
+        begin = time.time()
+        new_lines = RenameVariable(c_file).run()
+        end = time.time()
+        srcml_times.append(end - begin)
+        assert count_diff(old_lines, new_lines) == (1, 1)
+        old_lines = new_lines
+
+    joern_times = []
+    for i in range(n_trials):
+        begin = time.time()
+        new_lines = RenameVariableJoernVersion(c_file).run()
+        end = time.time()
+        joern_times.append(end - begin)
+        assert count_diff(old_lines, new_lines) == (1, 1)
+        old_lines = new_lines
+
+    print(f'{sum(srcml_times)/len(srcml_times):.2f} SrcML {sum(joern_times)/len(joern_times):.2f} joern')
+
+
 def test_avoid():
     """Should avoid renaming x and instead rename y (second choice)."""
     c_file = Path(test_data_root/'testbed/testbed.c')
