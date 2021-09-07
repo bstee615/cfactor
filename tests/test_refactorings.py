@@ -56,6 +56,7 @@ def test_permute_stmt():
     with open(c_file) as f:
         old_lines = f.readlines()
     new_lines = PermuteStmt(c_file).run()
+    print_diff(old_lines, new_lines)
     assert count_diff(old_lines, new_lines) == (1, 1)
 
 
