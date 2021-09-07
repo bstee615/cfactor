@@ -1,6 +1,0 @@
-Project	Buggy	Fixed	Line of Bug Crash	Line after Fix	File of Bug	Type of Bug
-findutils	71f10368	f7197f3a	2126	2127	find/pred.c	Crash? Couldn't replicate
-make	c7b469f0	3b1432d8	2735	2798	job.c	Segmentation fault
-coreutils	7380cf79	2e636af1	264	268	src/cut.c	Segmentation fault
-coreutils	ec48bead	be7932e8	267	266	src/cut.c	Segmentation fault
-coreutils	20c0b870	51a8f707	410,453,484	403,459,490	src/od.c	Memory exhausted
