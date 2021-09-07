@@ -4,7 +4,7 @@ from collections import OrderedDict
 import copy
 from refactorings.bad_node_exception import BadNodeException
 
-from refactorings import clang_format
+# from refactorings import clang_format
 from refactorings.base import BaseTransformation
 from refactorings.joern import JoernLocation
 import logging

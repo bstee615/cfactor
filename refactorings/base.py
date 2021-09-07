@@ -29,9 +29,6 @@ class BaseTransformation(abc.ABC):
     def __init__(self, c_file, **kwargs):
         # Load target source file
         self.c_file = Path(c_file)
-        project = Path(kwargs.get("project", self.c_file.parent))
-        prefix = f'{project}:{self.c_file}'
-        self.logger = PrefixedLoggerAdapter(prefix, self.logger)
 
         with open(self.c_file) as f:
             self.old_lines = f.readlines()
@@ -39,7 +36,7 @@ class BaseTransformation(abc.ABC):
         with open(self.c_file, newline='\r\n') as f:
             self.old_text = f.read()
         if '\r' in self.old_text:
-            raise Exception(f'{c_file} is CRLF')
+            raise Exception(f'CRLF')
             
         self.rng = random.Random(0)
         
@@ -49,12 +46,7 @@ class BaseTransformation(abc.ABC):
         else:
             self.avoid_lineno = set()
 
-        try:
-            exclude_files = kwargs.get("exclude", None)
-            copy_out = kwargs.get("copy_out", False)
-            self.joern = JoernInfo(self.c_file, project, exclude_files, copy_out)
-        except Exception as e:
-            self.logger.exception(e)
+        self.joern = JoernInfo(c_file)
 
     @abc.abstractmethod
     def get_targets(self, target):
@@ -81,8 +73,6 @@ class BaseTransformation(abc.ABC):
     @classmethod
     def get_indent(cls, line):
         return line[:-len(line.lstrip())]
-    def get_location(self, n):
-        return JoernLocation.fromstring(self.joern.node_location[n])
 
     def run(self):
         all_targets = self.get_targets()

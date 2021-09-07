@@ -101,8 +101,7 @@ class PermuteStmt(BaseTransformation):
         """Swap 2 lines in a file's text and return the lines in the text"""
         def to_line(loc):
             return loc.line
-        with open(self.c_file) as f:
-            lines = f.readlines()
+        lines = list(self.old_lines)
         a_idx = to_line(self.joern.node_location[a])-1
         b_idx = to_line(self.joern.node_location[b])-1
         lines[a_idx], lines[b_idx] = lines[b_idx], lines[a_idx]
