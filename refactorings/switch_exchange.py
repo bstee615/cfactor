@@ -41,13 +41,16 @@ class SwitchExchange(SrcMLTransformation):
                     block = [c]
             else:
                 block.append(c)
-                block_ender_ok = self.srcml.tag(c) in ('break', 'return')
+                if self.srcml.tag(c) in ('break', 'return'):
+                    block_ender_ok = True
+                elif self.srcml.tag(c) not in ('comment',):
+                    block_ender_ok = False
         blocks.append(block)
         self.logger.debug(f'{len(blocks)=}')
 
         try:
             # Save some nodes
-            block_content_text = block_content.text
+            old_block_content_text = block_content.text
             cond_expr = self.srcml.xp(cond, 'src:expr')[0]
             cond_expr.tail = ' '
 
@@ -117,15 +120,18 @@ class SwitchExchange(SrcMLTransformation):
 
                 # Assemble block content (statements inside the block)
                 if len(stmts) > 0:
-                    stmts[-1].tail = block_content_text
+                    stmts[-1].tail = old_block_content_text
+                    block_content_text = old_block_content_text + '{' + labels[-1].tail
+                else:
+                    block_content_text = old_block_content_text + '{' + old_block_content_text
                 if i == len(blocks)-1:
                     block_content_tail = '}'
                 else:
-                    block_content_tail = '}' + block_content_text
+                    block_content_tail = '}' + old_block_content_text
                 args.append(
                     E.block(
                         E.block_content(
-                            block_content_text + '{' + labels[-1].tail,
+                            block_content_text,
                             *stmts,
                             block_content_tail
                         )

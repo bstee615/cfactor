@@ -25,6 +25,7 @@ def test_loop_exchange_unit(input_file, expected):
 @pytest.mark.parametrize("input_file,expected", [
     (test_data_root/'unit/switch_exchange.c', (7, 7)),
     (test_data_root/'unit/switch_exchange_empty_block.c', (7, 7)),
+    (test_data_root/'unit/switch_exchange_comment.c', (7, 7)),
     (test_data_root/'unit/switch_exchange_default_not_last.c', 'fallthrough'),
     (test_data_root/'unit/switch_exchange_fallthrough.c', 'expected tag to end block'),
     (test_data_root/'unit/switch_exchange_empty.c', 'empty switch statement'),
@@ -42,7 +43,8 @@ def test_switch_exchange(input_file, expected):
             r.run_target(target)
     else:
         new_lines = r.run_target(target)
-        assert count_diff(old_lines, new_lines) == expected, print_diff(old_lines, new_lines)
+        print_diff(old_lines, new_lines)
+        assert count_diff(old_lines, new_lines) == expected
 
 """
 Old tests
