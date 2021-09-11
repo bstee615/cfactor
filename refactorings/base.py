@@ -18,7 +18,7 @@ class BaseTransformation(abc.ABC):
         if '\r' in c_code:
             raise Exception(f'CRLF')
 
-        self.rng = random.Random(0)
+        self.rng = random.Random(random.random())
 
         self.picker = picker
         if avoid_lines is None:

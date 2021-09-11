@@ -30,7 +30,7 @@ class InsertNoop(SrcMLTransformation):
 
         typename, value = get_random_typename_value()
         literaltype = type_to_literaltype[typename]
-        new_decl_stmt = E.decl_stmt(
+        args = [
             E.decl(
                 E.type(
                     E.name(typename, ' '),
@@ -43,8 +43,12 @@ class InsertNoop(SrcMLTransformation):
                     ),
                 ),
                 ';'
-            ),
-            target.tail
+            )
+        ]
+        if target.tail is not None:
+            args.append(target.tail)
+        new_decl_stmt = E.decl_stmt(
+            *args
         )
         logger.debug(etree.tostring(new_decl_stmt))
 

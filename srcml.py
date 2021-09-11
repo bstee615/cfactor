@@ -73,8 +73,12 @@ class SrcMLInfo:
     def load_xml(self):
         proc = subprocess.Popen([str(srcml_exe), '-lC'],
                                 stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.xml = proc.communicate(input=self.c_code.encode('utf-8'))[0]
+        channel = proc.communicate(input=self.c_code.encode('utf-8'))
+        if proc.returncode != 0:
+            raise Exception(channel[1])
+        self.xml = channel[0]
         self.xml_root = etree.fromstring(self.xml)
+        logger.debug('new XML:\n%s', self.xml.decode('utf-8'))
         return self.xml
 
     def load_c_code(self):
