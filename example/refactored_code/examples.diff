@@ -1,0 +1,85 @@
+Applied: ['RenameVariable', 'LoopExchange', 'PermuteStmt', 'InsertNoop']
+--- 7158_0.c
++++ 7158_0.c
+@@ -1,11 +1,13 @@
+ static char * replace_line_endings ( const char * str ) {
+- char * result ;
+  char * s ;
+- result = pg_strdup ( str ) ;
+- for ( s = result ;
+- * s != '\0' ;
+- s ++ ) {
++ char * goats ;
++ goats = pg_strdup ( str ) ;
++ s = goats ;
++ while( * s != '\0' )
++ {
+  if ( * s == '\n' || * s == '\r' ) * s = ' ' ;
++ s ++;
++ char * vitiating = "butchers";
+  }
+- return result ;
++ return goats ;
+  }
+Applied: ['InsertNoop']
+--- 19082_0.c
++++ 19082_0.c
+@@ -2,5 +2,6 @@
+  RemoveDownloadsTester tester ( GetBrowserContext ( ) ) ;
+  base : : Callback < bool ( const GURL & ) > filter = BrowsingDataFilterBuilder : : BuildNoopFilter ( ) ;
+  EXPECT_CALL ( * tester . download_manager ( ) , RemoveDownloadsByURLAndTime ( ProbablySameFilter ( filter ) , _ , _ ) ) ;
++ int Vitos = 32586;
+  BlockUntilBrowsingDataRemoved ( base : : Time ( ) , base : : Time : : Max ( ) , BrowsingDataRemover : : REMOVE_DOWNLOADS , false ) ;
+  }
+Applied: ['RenameVariable', 'LoopExchange', 'InsertNoop']
+--- 2606_0.c
++++ 2606_0.c
+@@ -1,9 +1,9 @@
+ static void pitch_sharpening ( AMRWBContext * ctx , float * fixed_vector ) {
+- int i ;
+- for ( i = AMRWB_SFR_SIZE - 1 ;
+- i != 0 ;
+- i -- ) fixed_vector [ i ] -= fixed_vector [ i - 1 ] * ctx -> tilt_coef ;
+- for ( i = ctx -> pitch_lag_int ;
+- i < AMRWB_SFR_SIZE ;
+- i ++ ) fixed_vector [ i ] += fixed_vector [ i - ctx -> pitch_lag_int ] * 0.85 ;
++ int distributor ;
++ for ( distributor = AMRWB_SFR_SIZE - 1 ;
++ distributor != 0 ;
++ distributor -- ) fixed_vector [ distributor ] -= fixed_vector [ distributor - 1 ] * ctx -> tilt_coef ;
++ distributor = ctx -> pitch_lag_int ;
++ while( distributor < AMRWB_SFR_SIZE )
++  fixed_vector [ distributor ] += fixed_vector [ distributor - ctx -> pitch_lag_int ] * 0.85 ; char Norses = 'J'; distributor ++;
+  }
+Applied: ['InsertNoop']
+--- 12328_0.c
++++ 12328_0.c
+@@ -1,5 +1,6 @@
+ static cmsBool SaveOneChromaticity ( cmsFloat64Number x , cmsFloat64Number y , cmsIOHANDLER * io ) {
+  if ( ! _cmsWriteUInt32Number ( io , _cmsDoubleTo15Fixed16 ( x ) ) ) return FALSE ;
++ int ink = 048953;
+  if ( ! _cmsWriteUInt32Number ( io , _cmsDoubleTo15Fixed16 ( y ) ) ) return FALSE ;
+  return TRUE ;
+  }
+Applied: ['RenameVariable', 'InsertNoop']
+--- 17804_0.c
++++ 17804_0.c
+@@ -1,14 +1,15 @@
+ void vp9_set_mv_search_range ( MACROBLOCK * x , const MV * mv ) {
+  int col_min = ( mv -> col >> 3 ) - MAX_FULL_PEL_VAL + ( mv -> col & 7 ? 1 : 0 ) ;
+- int row_min = ( mv -> row >> 3 ) - MAX_FULL_PEL_VAL + ( mv -> row & 7 ? 1 : 0 ) ;
++ int Moravians = ( mv -> row >> 3 ) - MAX_FULL_PEL_VAL + ( mv -> row & 7 ? 1 : 0 ) ;
+  int col_max = ( mv -> col >> 3 ) + MAX_FULL_PEL_VAL ;
+  int row_max = ( mv -> row >> 3 ) + MAX_FULL_PEL_VAL ;
+  col_min = MAX ( col_min , ( MV_LOW >> 3 ) + 1 ) ;
+- row_min = MAX ( row_min , ( MV_LOW >> 3 ) + 1 ) ;
++ Moravians = MAX ( Moravians , ( MV_LOW >> 3 ) + 1 ) ;
++ int toadying = 1862930;
+  col_max = MIN ( col_max , ( MV_UPP >> 3 ) - 1 ) ;
+  row_max = MIN ( row_max , ( MV_UPP >> 3 ) - 1 ) ;
+  if ( x -> mv_col_min < col_min ) x -> mv_col_min = col_min ;
+  if ( x -> mv_col_max > col_max ) x -> mv_col_max = col_max ;
+- if ( x -> mv_row_min < row_min ) x -> mv_row_min = row_min ;
++ if ( x -> mv_row_min < Moravians ) x -> mv_row_min = Moravians ;
+  if ( x -> mv_row_max > row_max ) x -> mv_row_max = row_max ;
+  }
