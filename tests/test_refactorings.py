@@ -13,12 +13,15 @@ from tests.test_utils import test_data_root, print_diff, count_diff
     (test_data_root / 'unit/loop_exchange_no_cond.c', (4, 2)),
     (test_data_root / 'unit/loop_exchange_no_post.c', (3, 2)),
     (test_data_root / 'unit/loop_exchange_empty.c', (2, 2)),
+    (test_data_root / 'unit/loop_exchange_single_statement.c', (5, 1)),
+    (test_data_root / 'unit/loop_exchange_single_statement_no_postincrement.c', (2, 1)),
 ])
 def test_loop_exchange_unit(input_file, expected):
     c_file = Path(input_file)
     with open(c_file) as f:
-        old_lines = f.readlines()
-    new_lines = LoopExchange(c_file).run()
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    new_lines = LoopExchange(c_file, old_code).run()
     print_diff(old_lines, new_lines)
     assert count_diff(old_lines, new_lines) == expected
 

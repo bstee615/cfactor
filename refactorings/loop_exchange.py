@@ -30,7 +30,13 @@ class LoopExchange(SrcMLTransformation):
             parent.remove(target)
             if len(incr) > 0:
                 block_content = block.getchildren()[0]
+                block_type = block.get('type')
+                is_pseudo = block_type is not None and block_type == 'pseudo'
                 block_content_end = block_content.getchildren()[-1].tail
+                if is_pseudo:
+                    block.text = target.tail + '{'
+                    block_content.tail = '}'
+                    block_content_end = target.tail
                 if block_content_end is None:
                     block_content_end = ''
                 incr.tail = ';' + block_content_end
