@@ -1,5 +1,6 @@
 import copy
 import logging
+import random
 
 from refactorings import RenameVariable, SwitchExchange, LoopExchange, PermuteStmt, InsertNoop
 from refactorings.defaults import first_picker
@@ -29,7 +30,17 @@ class TransformationProject:
         self.c_code = c_code
         self.avoid = avoid
         self.style = style
-        self.style_args = style_args
+        self.style_info = {"args": style_args}
+        self.init_transform()
+
+    def init_transform(self):
+        if self.style == 'one_of_each':
+            pass
+        elif self.style == 'k_random':
+            self.style_info["k"] = self.style_info["args"][0]
+        elif self.style == 'threshold':
+            pass
+        del self.style_info["args"]
 
     def get_transform(self):
         if self.style == 'one_of_each':
@@ -38,6 +49,16 @@ class TransformationProject:
                 return None
             else:
                 return self.transforms.pop(0)
+        elif self.style == 'k_random':
+            if self.style_info["k"] == 0:
+                return None
+            else:
+                self.style_info["k"] -= 1
+                return random.choice(self.transforms)
+        elif self.style == 'threshold':
+            raise NotImplementedError()
+        else:
+            raise Exception(f'unknown transform style {self.style}')
 
     def apply_all(self, return_applied=False):
         """Do C source-to-source translation"""

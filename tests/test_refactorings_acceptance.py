@@ -1,8 +1,10 @@
 import datetime
+import random
 from pathlib import Path
 
 import pytest
 
+import refactorings
 from refactorings import *
 from refactorings.project import TransformationProject
 from tests.test_utils import test_data_root, diff_lines, print_diff, count_diff
@@ -39,14 +41,21 @@ def test_loop_exchange_acceptance(c_file):
             raise
 
 
-def test_project():
+@pytest.mark.parametrize("style,style_args,expected_diff,expected_applied", [
+    ('one_of_each', None, (18, 17), all_refactorings),
+    ('k_random', [5], (8, 3), [refactorings.PermuteStmt, refactorings.PermuteStmt, refactorings.InsertNoop, refactorings.LoopExchange, refactorings.LoopExchange]),
+    ('threshold', None, (-1, -1), all_refactorings),
+])
+def test_project(style, style_args, expected_diff, expected_applied):
+    random.seed(0)
     c_file = Path(test_data_root / 'testbed/testbed.c')
-    project = TransformationProject(c_file, open(c_file).read(), transforms=all_refactorings, picker=first_picker)
-    new_lines = project.apply_all()
+    project = TransformationProject(c_file, open(c_file).read(), transforms=all_refactorings, picker=first_picker, style=style, style_args=style_args)
+    new_lines, applied = project.apply_all(return_applied=True)
     with open(c_file) as f:
         old_lines = f.readlines()
     print_diff(old_lines, new_lines)
-    assert count_diff(old_lines, new_lines) == (18, 17), print_diff(old_lines, new_lines)
+    assert applied == expected_applied
+    assert count_diff(old_lines, new_lines) == expected_diff, print_diff(old_lines, new_lines)
 
 
 @pytest.mark.skip('CRLF only causes problems with Joern')
