@@ -38,8 +38,9 @@ def test_loop_exchange_unit(input_file, expected):
 def test_switch_exchange(input_file, expected):
     c_file = Path(input_file)
     with open(c_file) as f:
-        old_lines = f.readlines()
-    r = SwitchExchange(c_file)
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    r = SwitchExchange(c_file, old_code)
     all_targets = r.get_targets()
     target = all_targets[0]
     if isinstance(expected, str):
@@ -60,8 +61,9 @@ Old tests
 def test_permute_stmt():
     c_file = Path(test_data_root / 'testbed/testbed.c')
     with open(c_file) as f:
-        old_lines = f.readlines()
-    new_lines = PermuteStmt(c_file).run()
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    new_lines = PermuteStmt(c_file, old_code).run()
     print_diff(old_lines, new_lines)
     assert count_diff(old_lines, new_lines) == (1, 1)
 
@@ -69,8 +71,9 @@ def test_permute_stmt():
 def test_rename_variable():
     c_file = Path(test_data_root / 'testbed/testbed.c')
     with open(c_file) as f:
-        old_lines = f.readlines()
-    new_lines = RenameVariable(c_file).run()
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    new_lines = RenameVariable(c_file, old_code).run()
     assert count_diff(old_lines, new_lines) == (5, 5)
 
 
@@ -79,19 +82,21 @@ def test_avoid():
     """Should avoid renaming x and instead rename y (second choice)."""
     c_file = Path(test_data_root / 'testbed/testbed.c')
     with open(c_file) as f:
-        old_lines = f.readlines()
-    new_lines = RenameVariable(c_file, avoid_lines=[57]).run()
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    new_lines = RenameVariable(c_file, old_code, avoid_lines=[57]).run()
     assert count_diff(old_lines, new_lines) == (7, 7)
 
 
 def test_insert_noop_targetcount():
     c_file = Path(test_data_root / 'testbed/testbed.c')
-    assert len(InsertNoop(c_file).get_targets()) == 32
+    assert len(InsertNoop(c_file, open(c_file).read()).get_targets()) == 32
 
 
 def test_insert_noop():
     c_file = Path(test_data_root / 'testbed/testbed.c')
     with open(c_file) as f:
-        old_lines = f.readlines()
-    new_lines = InsertNoop(c_file).run()
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    new_lines = InsertNoop(c_file, old_code).run()
     assert count_diff(old_lines, new_lines) == (1, 0)

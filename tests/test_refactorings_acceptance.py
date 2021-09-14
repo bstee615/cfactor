@@ -23,8 +23,9 @@ def test_loop_exchange_acceptance(c_file):
     c_file = Path(c_file)
     diff_file = c_file.with_suffix('.patch')
     with open(c_file) as f:
-        old_lines = f.readlines()
-    new_lines = LoopExchange(c_file).run()
+        old_code = f.read()
+        old_lines = old_code.splitlines(keepends=True)
+    new_lines = LoopExchange(c_file, old_code).run()
     diff_out = diff_lines(old_lines, new_lines)
     with open(diff_file) as f:
         diff_exp = f.readlines()
@@ -40,17 +41,16 @@ def test_loop_exchange_acceptance(c_file):
 
 def test_project():
     c_file = Path(test_data_root / 'testbed/testbed.c')
-    with TransformationProject(c_file, transforms=all_refactorings, picker=first_picker) as project:
-        new_filename = project.apply_all()
-        with open(c_file) as f:
-            old_lines = f.readlines()
-        with open(new_filename) as f:
-            new_lines = f.readlines()
-        print_diff(old_lines, new_lines)
-        assert count_diff(old_lines, new_lines) == (16, 19), print_diff(old_lines, new_lines)
+    project = TransformationProject(c_file, open(c_file).read(), transforms=all_refactorings, picker=first_picker)
+    new_lines = project.apply_all()
+    with open(c_file) as f:
+        old_lines = f.readlines()
+    print_diff(old_lines, new_lines)
+    assert count_diff(old_lines, new_lines) == (18, 17), print_diff(old_lines, new_lines)
 
 
+@pytest.mark.skip('CRLF only causes problems with Joern')
 def test_crlf():
     c_file = Path(test_data_root / 'crlf/crlf.c')
     with pytest.raises(Exception, match='.* is CRLF'):
-        PermuteStmt(c_file).run()
+        PermuteStmt(c_file, open(c_file).read()).run()
