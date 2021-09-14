@@ -15,6 +15,7 @@ all_refactorings = [
     PermuteStmt,
     InsertNoop,
 ]
+# TODO: implement permute_condition, permute_if_else
 
 
 class TransformationProject:

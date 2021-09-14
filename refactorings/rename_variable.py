@@ -6,6 +6,7 @@ from refactorings.random_word import get_random_word
 
 class RenameVariable(SrcMLTransformation):
     def get_targets(self):
+        # TODO: include function parameters
         all_names = self.srcml.xp(f'//src:function//src:decl_stmt/src:decl/src:name')
         return all_names
 
