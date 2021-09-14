@@ -1,4 +1,5 @@
 import copy
+import difflib
 import logging
 import random
 
@@ -27,7 +28,7 @@ class TransformationProject:
         self.picker = picker
 
         self.c_filename = c_filename
-        self.c_code = c_code
+        self.original_c_code = self.c_code = c_code
         self.avoid = avoid
         self.style = style
         self.style_info = {"args": style_args}
@@ -37,9 +38,9 @@ class TransformationProject:
         if self.style == 'one_of_each':
             pass
         elif self.style == 'k_random':
-            self.style_info["k"] = self.style_info["args"][0]
+            self.style_info["k"] = int(self.style_info["args"][0])
         elif self.style == 'threshold':
-            pass
+            self.style_info["threshold"] = float(self.style_info["args"][0])
         del self.style_info["args"]
 
     def get_transform(self):
@@ -56,7 +57,14 @@ class TransformationProject:
                 self.style_info["k"] -= 1
                 return random.choice(self.transforms)
         elif self.style == 'threshold':
-            raise NotImplementedError()
+            original_code_lines = self.original_c_code.splitlines(keepends=True)
+            diff = difflib.ndiff(original_code_lines, self.c_code.splitlines(keepends=True))
+            num_changed = len([line for line in diff if line[:2] in ('- ', '+ ')])
+            percent_changed = num_changed / len(original_code_lines)
+            if percent_changed >= self.style_info["threshold"]:  # If this condition is repeated without num_changed increasing, maybe we should quit with an exception
+                return None
+            else:
+                return random.choice(self.transforms)
         else:
             raise Exception(f'unknown transform style {self.style}')
 

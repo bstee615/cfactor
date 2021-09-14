@@ -44,7 +44,7 @@ def test_loop_exchange_acceptance(c_file):
 @pytest.mark.parametrize("style,style_args,expected_diff,expected_applied", [
     ('one_of_each', None, (18, 17), all_refactorings),
     ('k_random', [5], (8, 3), [refactorings.PermuteStmt, refactorings.PermuteStmt, refactorings.InsertNoop, refactorings.LoopExchange, refactorings.LoopExchange]),
-    ('threshold', None, (-1, -1), all_refactorings),
+    ('threshold', [0.5], (36, 25), [refactorings.permute_stmt.PermuteStmt, refactorings.permute_stmt.PermuteStmt, refactorings.insert_noop.InsertNoop, refactorings.loop_exchange.LoopExchange, refactorings.loop_exchange.LoopExchange, refactorings.switch_exchange.SwitchExchange, refactorings.loop_exchange.LoopExchange, refactorings.rename_variable.RenameVariable, refactorings.insert_noop.InsertNoop, refactorings.insert_noop.InsertNoop, refactorings.rename_variable.RenameVariable, refactorings.rename_variable.RenameVariable, refactorings.permute_stmt.PermuteStmt, refactorings.insert_noop.InsertNoop, refactorings.insert_noop.InsertNoop, refactorings.rename_variable.RenameVariable]),
 ])
 def test_project(style, style_args, expected_diff, expected_applied):
     random.seed(0)
