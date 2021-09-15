@@ -64,6 +64,7 @@ class SwitchExchange(SrcMLTransformation):
                     elif self.srcml.tag(n) != 'break':
                         stmts.append(n)
                 self.logger.debug(f'{labels=} {stmts=}')
+                assert len(labels) > 0, f'no labels in {["".join(n.itertext()) for n in block]}'
 
                 # Will be used to build arguments for call to E.if_stmt
                 args = []
