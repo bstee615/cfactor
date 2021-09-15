@@ -47,7 +47,7 @@ class TransformationProject:
     def get_transform(self):
         if self.style == 'one_of_each':
             if len(self.transforms) == 0:
-                self.logger.info('[%s] ran out of transforms', self.c_filename)
+                # self.logger.info('[%s] ran out of transforms', self.c_filename)
                 return None
             else:
                 return self.transforms.pop(0)
