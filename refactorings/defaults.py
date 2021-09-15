@@ -7,3 +7,8 @@ def random_picker(targets, **kwargs):
 def first_picker(targets, **kwargs):
     assert len(targets) > 0, 'Collection is empty'
     return targets[0]
+
+
+def n_picker(targets, **kwargs):
+    assert len(targets) > 0, 'Collection is empty'
+    return targets[kwargs.get('n')]

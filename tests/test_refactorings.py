@@ -1,9 +1,11 @@
+import functools
 from pathlib import Path
 
 import pytest
 
 from refactorings import *
 from refactorings.bad_node_exception import BadNodeException
+from refactorings.defaults import n_picker
 from tests.test_utils import test_data_root, print_diff, count_diff
 
 
@@ -15,6 +17,8 @@ from tests.test_utils import test_data_root, print_diff, count_diff
     (test_data_root / 'unit/loop_exchange_empty.c', (2, 2)),
     (test_data_root / 'unit/loop_exchange_single_statement.c', (5, 1)),
     (test_data_root / 'unit/loop_exchange_single_statement_no_postincrement.c', (2, 1)),
+    (test_data_root / 'unit/loop_exchange_empty_block.c', (4, 2)),
+    (test_data_root / 'unit/loop_exchange_empty_block_no_post.c', (2, 1)),
 ])
 def test_loop_exchange_unit(input_file, expected):
     c_file = Path(input_file)
