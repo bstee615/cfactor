@@ -89,7 +89,8 @@ class SrcMLInfo:
         return self.c_code
 
     def revert_changes(self):
-        self.xml_root = etree.fromstring(self.xml)
+        parser = etree.XMLParser(huge_tree=True)
+        self.xml_root = etree.fromstring(self.xml, parser=parser)
 
     def apply_changes(self):
         self.xml = etree.tostring(self.xml_root)
