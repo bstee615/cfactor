@@ -4,6 +4,7 @@ import logging
 
 # from refactorings import clang_format
 from refactorings.base import SrcMLTransformation
+from refactorings.util import join_str
 from srcml import E
 
 
@@ -51,7 +52,8 @@ class SwitchExchange(SrcMLTransformation):
 
             ifs = []
             for i, block in enumerate(blocks):
-                # Dissect block
+                # Dis
+                # sect block
                 block_is_default = False
                 labels, stmts = [], []
                 for n in block:
@@ -117,13 +119,13 @@ class SwitchExchange(SrcMLTransformation):
                 # Assemble block content (statements inside the block)
                 if len(stmts) > 0:
                     stmts[-1].tail = old_block_content_text
-                    block_content_text = old_block_content_text + '{' + labels[-1].tail
+                    block_content_text = join_str(old_block_content_text, '{', labels[-1].tail)
                 else:
-                    block_content_text = old_block_content_text + '{' + old_block_content_text
+                    block_content_text = join_str(old_block_content_text, '{', old_block_content_text)
                 if i == len(blocks) - 1:
                     block_content_tail = '}'
                 else:
-                    block_content_tail = '}' + old_block_content_text
+                    block_content_tail = join_str('}', old_block_content_text)
                 args.append(
                     E.block(
                         E.block_content(

@@ -1,6 +1,7 @@
 """Loop exchange: exchange for loop with while"""
 from refactorings.bad_node_exception import BadNodeException
 from refactorings.base import SrcMLTransformation
+from refactorings.util import join_str
 from srcml import E
 
 
@@ -22,10 +23,6 @@ class LoopExchange(SrcMLTransformation):
         try:
             control_tail = control.tail
             control_end = control.getchildren()[-1].tail
-            if control_tail is None:
-                control_tail = ''
-            if control_end is None:
-                control_end = ''
             parent = target.getparent()
             parent.remove(target)
             if len(incr) > 0:
@@ -40,13 +37,9 @@ class LoopExchange(SrcMLTransformation):
                 if block_content_end is None:
                     block_content_end = ''
                 if is_pseudo:
-                    if target.tail is None:
-                        block.text = '{'
-                    else:
-                        block.text = target.tail + '{'
+                    block.text = join_str(target.tail, '{')
                     block_content.tail = '}'
-                    block_content_end = target.tail
-                incr.tail = ';' + block_content_end
+                incr.tail = join_str(';', target.tail)
                 if len(block_content_children) > 0:
                     block_content_children[-1].tail = block_content.text
                 block_content.insert(len(block_content), incr)
@@ -66,7 +59,7 @@ class LoopExchange(SrcMLTransformation):
                 )
                 condition.insert(0, literal_true)
             condition.text = control.text
-            self.srcml.xp(condition, 'src:expr')[0].tail = control_end + control_tail
+            self.srcml.xp(condition, 'src:expr')[0].tail = join_str(control_end, control_tail)
 
             args = [
                 'while',
