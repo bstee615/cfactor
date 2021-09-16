@@ -77,7 +77,8 @@ class SrcMLInfo:
         if proc.returncode != 0:
             raise Exception(channel[1])
         self.xml = channel[0]
-        self.xml_root = etree.fromstring(self.xml)
+        parser = etree.XMLParser(huge_tree=True)
+        self.xml_root = etree.fromstring(self.xml, parser=parser)
         logger.debug('new XML:\n%s', self.xml.decode('utf-8'))
         return self.xml
 
