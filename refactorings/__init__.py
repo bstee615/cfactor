@@ -16,5 +16,5 @@ from refactorings.permute_stmt import PermuteStmt
 from refactorings.switch_exchange import SwitchExchange
 from refactorings.loop_exchange import LoopExchange
 from refactorings.defaults import first_picker, random_picker
-from refactorings.project import TransformationProject, all_refactorings
+from refactorings.project import TransformationProject, all_refactorings, refactorings_without_new_names
 
