@@ -1,4 +1,6 @@
 """Loop exchange: exchange for loop with while"""
+import copy
+
 from refactorings.bad_node_exception import BadNodeException
 from refactorings.base import SrcMLTransformation
 from refactorings.util import join_str
@@ -30,16 +32,17 @@ class LoopExchange(SrcMLTransformation):
                 block_type = block.get('type')
                 is_pseudo = block_type is not None and block_type == 'pseudo'
                 block_content_children = block_content.getchildren()
-                if len(block_content_children) > 0:
-                    block_content_end = block_content_children[-1].tail
-                else:
-                    block_content_end = block_content.text
-                if block_content_end is None:
-                    block_content_end = ''
                 if is_pseudo:
                     block.text = join_str(target.tail, '{')
                     block_content.tail = '}'
                 incr.tail = join_str(';', target.tail)
+                # Insert increment statement before each continue to fully conform with C spec.
+                # https://en.cppreference.com/w/cpp/language/for#:~:text=continue%20in%20the%20statement%20will%20execute%20iteration-expression
+                for continue_stmt in self.srcml.xp(block_content, './/src:continue'):
+                    continue_parent_stmt = continue_stmt.getparent()
+                    incr_copy = copy.deepcopy(incr)
+                    incr_copy.tail = join_str(';', continue_parent_stmt.text)
+                    continue_parent_stmt.insert(continue_parent_stmt.index(continue_stmt), incr_copy)
                 if len(block_content_children) > 0:
                     block_content_children[-1].tail = block_content.text
                 block_content.insert(len(block_content), incr)
