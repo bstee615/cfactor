@@ -14,6 +14,9 @@ from lxml.builder import ElementMaker
 
 logger = logging.getLogger(__name__)
 
+# Sometimes you get "OSError: [WinError 193] %1 is not a valid Win32 application",
+# fix with conda install --force-reinstall pywin32
+# https://github.com/jupyter/jupyter_core/issues/187#issuecomment-633173689
 srcml_install = Path(__file__).parent / 'srcml'
 srcml_exe = srcml_install / 'bin/srcml'
 assert srcml_exe.exists()
